@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Coming soon</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --black: #0a0a0c;
+    --screen: #e8e6e0;
+    --ash: #8a877f;
+    --violet: #a78fd0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--black);
+    color: var(--screen);
+    font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.4rem;
+    padding: 2rem;
+    overflow: hidden;
+  }
+  h1 {
+    font-family: "Didot", "Bodoni 72", "Georgia", serif;
+    font-weight: 400;
+    font-size: clamp(1.6rem, 4.5vw, 2.6rem);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  p {
+    font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ash);
+    text-align: center;
+  }
+  canvas { width: min(560px, 86vw); height: 70px; }
+</style>
+</head>
+<body>
+<h1>Coming&nbsp;soon</h1>
+<canvas id="wave" aria-hidden="true"></canvas>
+<p>Something is being built here</p>
+<script>
+(function () {
+  var c = document.getElementById("wave"), x = c.getContext("2d");
+  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var dpr = Math.min(devicePixelRatio || 1, 2), W, H;
+  function resize() {
+    W = c.clientWidth; H = c.clientHeight;
+    if (!(W > 0)) return;
+    c.width = W * dpr; c.height = H * dpr;
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener("resize", resize); resize();
+  function draw(t) {
+    if (!(W > 0)) resize();
+    x.clearRect(0, 0, W, H);
+    x.beginPath();
+    for (var i = 0; i <= W; i += 2) {
+      var u = i / W, env = Math.sin(Math.PI * u);
+      var y = H / 2 + env * (Math.sin(u * 18.8 + t * 0.0005) * 11 + Math.sin(u * 44 - t * 0.0003) * 4);
+      i === 0 ? x.moveTo(i, y) : x.lineTo(i, y);
+    }
+    x.strokeStyle = "rgba(167,143,208,0.75)";
+    x.lineWidth = 1.1;
+    x.stroke();
+  }
+  if (reduced) { draw(8); return; }
+  requestAnimationFrame(function loop(t) { draw(t); requestAnimationFrame(loop); });
+})();
+</script>
+</body>
+</html>
