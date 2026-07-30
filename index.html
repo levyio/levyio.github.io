@@ -43,12 +43,33 @@
     text-align: center;
   }
   canvas { width: min(560px, 86vw); height: 70px; }
+  .subscribe {
+    display: inline-block;
+    font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--screen);
+    border: 1px solid var(--ash);
+    padding: 0.85rem 1.6rem;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .subscribe:hover { border-color: var(--violet); color: var(--violet); }
+  .subscribe:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+  .fineprint {
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+  }
+  .fineprint a { color: var(--ash); }
 </style>
 </head>
 <body>
 <h1>Coming&nbsp;soon</h1>
 <canvas id="wave" aria-hidden="true"></canvas>
 <p>Something is being built here</p>
+<a class="subscribe" href="mailto:developerclaude1@gmail.com?subject=Keep%20me%20posted&body=Count%20me%20in%20%E2%80%94%20tell%20me%20when%20it%20goes%20live.">Notify me when it begins</a>
+<p class="fineprint">one email when it opens — nothing else · or write: <a href="mailto:developerclaude1@gmail.com">developerclaude1@gmail.com</a></p>
 <script>
 (function () {
   var c = document.getElementById("wave"), x = c.getContext("2d");
