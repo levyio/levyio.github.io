@@ -11,6 +11,7 @@
     --screen: #e8e6e0;
     --ash: #8a877f;
     --violet: #a78fd0;
+    --line: #26262c;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
@@ -22,7 +23,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2.4rem;
+    gap: 2.2rem;
     padding: 2rem;
     overflow: hidden;
   }
@@ -34,47 +35,68 @@
     text-transform: uppercase;
     text-align: center;
   }
-  p {
+  p, input, button {
     font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+  }
+  p {
     font-size: 0.72rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--ash);
     text-align: center;
   }
-  canvas { width: min(560px, 86vw); height: 70px; }
-  .subscribe {
-    display: inline-block;
-    font-family: ui-monospace, "SF Mono", "Menlo", monospace;
+  canvas { width: min(620px, 88vw); height: 240px; }
+  form { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+  input[type="email"] {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--screen);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    padding: 0.8rem 1rem;
+    width: min(300px, 62vw);
+    outline: none;
+  }
+  input[type="email"]:focus { border-color: var(--violet); }
+  input[type="email"]::placeholder { color: var(--ash); }
+  button {
     font-size: 0.72rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
+    background: none;
     color: var(--screen);
     border: 1px solid var(--ash);
-    padding: 0.85rem 1.6rem;
-    text-decoration: none;
+    padding: 0.8rem 1.4rem;
+    cursor: pointer;
     transition: border-color 0.2s, color 0.2s;
   }
-  .subscribe:hover { border-color: var(--violet); color: var(--violet); }
-  .subscribe:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
-  .fineprint {
-    font-size: 0.62rem;
-    letter-spacing: 0.12em;
-  }
-  .fineprint a { color: var(--ash); }
+  button:hover { border-color: var(--violet); color: var(--violet); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+  .fineprint { font-size: 0.62rem; letter-spacing: 0.12em; }
+  .ok { color: var(--violet); }
 </style>
 </head>
 <body>
 <h1>Coming&nbsp;soon</h1>
-<canvas id="wave" aria-hidden="true"></canvas>
+<canvas id="dim" aria-hidden="true"></canvas>
 <p>Something is being built here</p>
-<a class="subscribe" href="mailto:developerclaude1@gmail.com?subject=Keep%20me%20posted&body=Count%20me%20in%20%E2%80%94%20tell%20me%20when%20it%20goes%20live.">Notify me when it begins</a>
-<p class="fineprint">one email when it opens — nothing else · or write: <a href="mailto:developerclaude1@gmail.com">developerclaude1@gmail.com</a></p>
+
+<form id="sub" novalidate>
+  <input type="email" id="em" required placeholder="your@email" aria-label="Email address" autocomplete="email" />
+  <button type="submit">Notify me</button>
+</form>
+<p class="fineprint" id="note">one email when it opens — nothing else</p>
+
 <script>
+/* ---------- the line that breathes between dimensions ----------
+   1D: a single harmonic line. 2D: it unfolds into an interference
+   field. 3D: the field lifts into a surface. Then home again.
+   One slow loop, forever. */
 (function () {
-  var c = document.getElementById("wave"), x = c.getContext("2d");
+  var c = document.getElementById("dim"), x = c.getContext("2d");
   var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var dpr = Math.min(devicePixelRatio || 1, 2), W, H;
+  var dpr = Math.min(devicePixelRatio || 1, 2);
+  var W = 0, H = 0;
   function resize() {
     W = c.clientWidth; H = c.clientHeight;
     if (!(W > 0)) return;
@@ -82,21 +104,93 @@
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   addEventListener("resize", resize); resize();
-  function draw(t) {
-    if (!(W > 0)) resize();
+
+  var ROWS = 22, COLS = 90;
+  function draw(tms) {
+    if (!(W > 0)) { resize(); return; }
+    var t = tms * 0.001;
+    // dimension breathes 1 → 3 → 1 over ~24s
+    var d = 2 + Math.sin(t * 0.26 - Math.PI / 2);          // 1..3
+    var spread = Math.min(1, Math.max(0, d - 1));           // line → field
+    var lift = Math.min(1, Math.max(0, d - 2));             // field → surface
+    var yawT = t * 0.1 * lift;                              // slow orbit only in 3D
+    var cyw = Math.cos(yawT), syw = Math.sin(yawT);
+    var cp = Math.cos(1.05 * lift), sp = Math.sin(1.05 * lift);
+    var camD = 1.9, fl = 1.35, K = Math.min(W, H * 2.4) * 0.95;
+
     x.clearRect(0, 0, W, H);
-    x.beginPath();
-    for (var i = 0; i <= W; i += 2) {
-      var u = i / W, env = Math.sin(Math.PI * u);
-      var y = H / 2 + env * (Math.sin(u * 18.8 + t * 0.0005) * 11 + Math.sin(u * 44 - t * 0.0003) * 4);
-      i === 0 ? x.moveTo(i, y) : x.lineTo(i, y);
+    for (var r = 0; r < ROWS; r++) {
+      var v = r / (ROWS - 1);
+      var rowOff = (v - 0.5) * spread;                      // rows collapse to one line at d=1
+      var alpha = spread === 0 && r !== (ROWS >> 1) ? 0 : (0.18 + 0.72 * (1 - Math.abs(v - 0.5) * spread));
+      if (r === (ROWS >> 1)) alpha = 0.95;
+      x.strokeStyle = r === (ROWS >> 1)
+        ? "rgba(167,143,208," + alpha + ")"
+        : "rgba(138,135,127," + alpha * 0.8 + ")";
+      x.lineWidth = r === (ROWS >> 1) ? 1.3 : 0.8;
+      x.beginPath();
+      for (var s = 0; s <= COLS; s++) {
+        var u = s / COLS;
+        // fractal harmonic: the octave series f, 2f, 4f — each an echo of the last
+        var w = Math.sin(u * 6.28 * 2 + t * 0.9 + v * 3.1) * 0.5
+              + Math.sin(u * 6.28 * 4 - t * 0.6 + v * 5.7) * 0.25
+              + Math.sin(u * 6.28 * 8 + t * 1.3 + v * 9.3) * 0.125;
+        var env = Math.sin(Math.PI * u);                    // pinned ends, like a string
+        var z = w * env * (0.06 + 0.1 * lift);
+        // project: x spans, rows spread in "depth" (2D = vertical, 3D = perspective)
+        var X0 = u - 0.5, Y0 = rowOff;
+        var X = X0 * cyw - Y0 * syw;
+        var Y = X0 * syw + Y0 * cyw;
+        var Y2 = Y * cp - z * sp;
+        var Z2 = Y * sp + z * cp;
+        var scl = fl / (camD + Y2);
+        var px = W / 2 + X * scl * K;
+        var py = H / 2 - Z2 * scl * K * 0.9 + (1 - lift) * rowOff * H * 0.85
+               - (1 - lift) * 0 + (lift === 0 ? w * env * H * 0.32 * (1 - spread * 0.4) : 0);
+        if (s === 0) x.moveTo(px, py); else x.lineTo(px, py);
+      }
+      x.stroke();
+      if (spread === 0) break; // pure 1D: only the one line exists
     }
-    x.strokeStyle = "rgba(167,143,208,0.75)";
-    x.lineWidth = 1.1;
-    x.stroke();
   }
-  if (reduced) { draw(8); return; }
-  requestAnimationFrame(function loop(t) { draw(t); requestAnimationFrame(loop); });
+  if (reduced) { draw(9000); return; }
+  (function loop(tm) { draw(tm || 0); requestAnimationFrame(loop); })();
+})();
+
+/* ---------- subscribe: typed on the page, recorded quietly ---------- */
+(function () {
+  var SUPA_URL = "https://esyxrdprhseeodswpaqk.supabase.co";
+  var SUPA_KEY = "sb_publishable_BpCu0uPWVI47Q_AOUgYVjA_7ZxVDgJ-";
+  var form = document.getElementById("sub"), em = document.getElementById("em"), note = document.getElementById("note");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = (em.value || "").trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      note.textContent = "that doesn't look like an address — try again";
+      return;
+    }
+    note.textContent = "…";
+    fetch(SUPA_URL + "/rest/v1/subscribers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPA_KEY,
+        "Authorization": "Bearer " + SUPA_KEY,
+        "Prefer": "return=minimal",
+      },
+      body: JSON.stringify({ email: email }),
+    }).then(function (r) {
+      if (r.ok || r.status === 409) {
+        form.remove();
+        note.textContent = "you're on the list 〰️ one email when it opens";
+        note.classList.add("ok");
+      } else {
+        note.textContent = "couldn't save — try again in a minute";
+      }
+    }).catch(function () {
+      note.textContent = "couldn't save — try again in a minute";
+    });
+  });
 })();
 </script>
 </body>
