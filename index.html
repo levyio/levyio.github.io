@@ -136,7 +136,7 @@
     if (inkMode !== 2) { x.fillStyle = "#e9e6df"; x.fillRect(0, 0, W, H); }
   });
 
-  var N = Math.min(5200, Math.max(2600, Math.floor(W * H / 380)));
+  var N = Math.min(7500, Math.max(3400, Math.floor(W * H / 250)));
   var px = new Float32Array(N), py = new Float32Array(N);
   var vx = new Float32Array(N), vy = new Float32Array(N);
   for (var i = 0; i < N; i++) { px[i] = Math.random(); py[i] = Math.random(); }
