@@ -6,18 +6,18 @@
 <title>Coming soon</title>
 <style>
   :root {
-    color-scheme: dark;
-    --black: #0a0a0c;
-    --screen: #e8e6e0;
-    --ash: #8a877f;
-    --violet: #a78fd0;
-    --line: #26262c;
+    color-scheme: light;
+    --field: #e9e6df;      /* the plate's warm white */
+    --ink: #16141a;        /* charcoal */
+    --dim: #6d6a63;        /* quiet text on the field */
+    --violet: #6d549c;     /* the one colour, deep enough for white */
+    --hairline: #c9c5bc;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
   body {
-    background: var(--black);
-    color: var(--screen);
+    background: var(--field);
+    color: var(--ink);
     font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
     display: flex;
     flex-direction: column;
@@ -27,11 +27,20 @@
     padding: 2rem;
     overflow: hidden;
   }
+  #plate {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+  }
+  h1, p, form { position: relative; z-index: 1; }
   h1 {
     font-family: "Didot", "Bodoni 72", "Georgia", serif;
     font-weight: 400;
-    font-size: clamp(1.6rem, 4.5vw, 2.6rem);
-    letter-spacing: 0.22em;
+    font-size: clamp(1.7rem, 5vw, 2.8rem);
+    letter-spacing: 0.24em;
     text-transform: uppercase;
     text-align: center;
   }
@@ -42,15 +51,14 @@
     font-size: 0.72rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--ash);
+    color: var(--dim);
     text-align: center;
   }
-  canvas { width: min(620px, 88vw); height: 240px; }
   form { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
   input[type="email"] {
-    background: none;
-    border: 1px solid var(--line);
-    color: var(--screen);
+    background: rgba(233, 230, 223, 0.75);
+    border: 1px solid var(--hairline);
+    color: var(--ink);
     font-size: 0.78rem;
     letter-spacing: 0.08em;
     padding: 0.8rem 1rem;
@@ -58,14 +66,14 @@
     outline: none;
   }
   input[type="email"]:focus { border-color: var(--violet); }
-  input[type="email"]::placeholder { color: var(--ash); }
+  input[type="email"]::placeholder { color: var(--dim); }
   button {
     font-size: 0.72rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    background: none;
-    color: var(--screen);
-    border: 1px solid var(--ash);
+    background: rgba(233, 230, 223, 0.75);
+    color: var(--ink);
+    border: 1px solid var(--ink);
     padding: 0.8rem 1.4rem;
     cursor: pointer;
     transition: border-color 0.2s, color 0.2s;
@@ -77,8 +85,9 @@
 </style>
 </head>
 <body>
+<canvas id="plate" aria-hidden="true"></canvas>
+
 <h1>Coming&nbsp;soon</h1>
-<canvas id="dim" aria-hidden="true"></canvas>
 <p>Something is being built here</p>
 
 <form id="sub" novalidate>
@@ -88,72 +97,84 @@
 <p class="fineprint" id="note">one email when it opens — nothing else</p>
 
 <script>
-/* ---------- the line that breathes between dimensions ----------
-   1D: a single harmonic line. 2D: it unfolds into an interference
-   field. 3D: the field lifts into a surface. Then home again.
-   One slow loop, forever. */
+/* ---------- the whole screen is the plate ----------
+   Black grains on a white field, everywhere. The frequency keeps
+   changing: each phase the grains shake loose, wander, and settle
+   into the next figure. A loop with no end. */
 (function () {
-  var c = document.getElementById("dim"), x = c.getContext("2d");
+  var c = document.getElementById("plate"), x = c.getContext("2d");
   var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var dpr = Math.min(devicePixelRatio || 1, 2);
+  var dpr = Math.min(devicePixelRatio || 1, 1.75);
   var W = 0, H = 0;
   function resize() {
-    W = c.clientWidth; H = c.clientHeight;
-    if (!(W > 0)) return;
+    W = innerWidth; H = innerHeight;
     c.width = W * dpr; c.height = H * dpr;
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   addEventListener("resize", resize); resize();
 
-  var ROWS = 22, COLS = 90;
+  var N = Math.min(5200, Math.max(2600, Math.floor(W * H / 380)));
+  var px = new Float32Array(N), py = new Float32Array(N);
+  var vx = new Float32Array(N), vy = new Float32Array(N);
+  for (var i = 0; i < N; i++) { px[i] = Math.random(); py[i] = Math.random(); }
+
+  /* the phase sequence: figures the screen moves between, forever */
+  var MODES = [[3, 2], [5, 4], [4, 1], [7, 5], [2, 3], [6, 4], [5, 2], [8, 5]];
+  var PHASE_S = 16;                // seconds per figure
+  var FADE_S = 2.5;                // seconds of morph between figures
+
+  function fieldAt(mx, nx, u, v) {
+    return Math.sin(mx * Math.PI * u) * Math.sin(nx * Math.PI * v)
+         + Math.sin(nx * Math.PI * u) * Math.sin(mx * Math.PI * v);
+  }
+
   function draw(tms) {
     if (!(W > 0)) { resize(); return; }
     var t = tms * 0.001;
-    // dimension breathes 1 → 3 → 1 over ~24s
-    var d = 2 + Math.sin(t * 0.26 - Math.PI / 2);          // 1..3
-    var spread = Math.min(1, Math.max(0, d - 1));           // line → field
-    var lift = Math.min(1, Math.max(0, d - 2));             // field → surface
-    var yawT = t * 0.1 * lift;                              // slow orbit only in 3D
-    var cyw = Math.cos(yawT), syw = Math.sin(yawT);
-    var cp = Math.cos(1.05 * lift), sp = Math.sin(1.05 * lift);
-    var camD = 1.9, fl = 1.35, K = Math.min(W, H * 2.4) * 0.95;
+    var k = Math.floor(t / PHASE_S);
+    var a = MODES[k % MODES.length], b = MODES[(k + 1) % MODES.length];
+    var into = t - k * PHASE_S;
+    var f = into > PHASE_S - FADE_S ? (into - (PHASE_S - FADE_S)) / FADE_S : 0;
+    f = f * f * (3 - 2 * f); // ease
+    // the breath: agitation swells as the figure changes, then true calm —
+    // calm is what lets the still lines catch the grains
+    var breath = 0.12 + 0.88 * Math.max(f, Math.pow(Math.max(0, 1 - into / FADE_S), 2));
 
     x.clearRect(0, 0, W, H);
-    for (var r = 0; r < ROWS; r++) {
-      var v = r / (ROWS - 1);
-      var rowOff = (v - 0.5) * spread;                      // rows collapse to one line at d=1
-      var alpha = spread === 0 && r !== (ROWS >> 1) ? 0 : (0.18 + 0.72 * (1 - Math.abs(v - 0.5) * spread));
-      if (r === (ROWS >> 1)) alpha = 0.95;
-      x.strokeStyle = r === (ROWS >> 1)
-        ? "rgba(167,143,208," + alpha + ")"
-        : "rgba(138,135,127," + alpha * 0.8 + ")";
-      x.lineWidth = r === (ROWS >> 1) ? 1.3 : 0.8;
-      x.beginPath();
-      for (var s = 0; s <= COLS; s++) {
-        var u = s / COLS;
-        // fractal harmonic: the octave series f, 2f, 4f — each an echo of the last
-        var w = Math.sin(u * 6.28 * 2 + t * 0.9 + v * 3.1) * 0.5
-              + Math.sin(u * 6.28 * 4 - t * 0.6 + v * 5.7) * 0.25
-              + Math.sin(u * 6.28 * 8 + t * 1.3 + v * 9.3) * 0.125;
-        var env = Math.sin(Math.PI * u);                    // pinned ends, like a string
-        var z = w * env * (0.06 + 0.1 * lift);
-        // project: x spans, rows spread in "depth" (2D = vertical, 3D = perspective)
-        var X0 = u - 0.5, Y0 = rowOff;
-        var X = X0 * cyw - Y0 * syw;
-        var Y = X0 * syw + Y0 * cyw;
-        var Y2 = Y * cp - z * sp;
-        var Z2 = Y * sp + z * cp;
-        var scl = fl / (camD + Y2);
-        var px = W / 2 + X * scl * K;
-        var py = H / 2 - Z2 * scl * K * 0.9 + (1 - lift) * rowOff * H * 0.85
-               - (1 - lift) * 0 + (lift === 0 ? w * env * H * 0.32 * (1 - spread * 0.4) : 0);
-        if (s === 0) x.moveTo(px, py); else x.lineTo(px, py);
-      }
-      x.stroke();
-      if (spread === 0) break; // pure 1D: only the one line exists
+    x.fillStyle = "rgba(22,20,26,0.82)";
+    var PI = Math.PI;
+    var am = a[0] * PI, an = a[1] * PI, bm = b[0] * PI, bn = b[1] * PI;
+    for (var i = 0; i < N; i++) {
+      var u = px[i], v = py[i];
+      // blended field + gradient — the grains drain toward the still lines
+      var sau = Math.sin(am * u), cau = Math.cos(am * u), sav = Math.sin(an * v), cav = Math.cos(an * v);
+      var sbu = Math.sin(an * u), cbu = Math.cos(an * u), sbv = Math.sin(am * v), cbv = Math.cos(am * v);
+      var A1 = sau * sav + sbu * sbv;
+      var dx1 = am * cau * sav + an * cbu * sbv;
+      var dy1 = an * sau * cav + am * sbu * cbv;
+      var scu = Math.sin(bm * u), ccu = Math.cos(bm * u), scv = Math.sin(bn * v), ccv = Math.cos(bn * v);
+      var sdu = Math.sin(bn * u), cdu = Math.cos(bn * u), sdv = Math.sin(bm * v), cdv = Math.cos(bm * v);
+      var A2 = scu * scv + sdu * sdv;
+      var dx2 = bm * ccu * scv + bn * cdu * sdv;
+      var dy2 = bn * scu * ccv + bm * sdu * cdv;
+      var A = (1 - f) * A1 + f * A2;
+      var dAdx = (1 - f) * dx1 + f * dx2;
+      var dAdy = (1 - f) * dy1 + f * dy2;
+      var aAbs = Math.abs(A);
+      vx[i] = vx[i] * 0.88 - A * dAdx * 0.00028 + (Math.random() - 0.5) * 0.0009 * (0.15 + breath) * aAbs;
+      vy[i] = vy[i] * 0.88 - A * dAdy * 0.00028 + (Math.random() - 0.5) * 0.0009 * (0.15 + breath) * aAbs;
+      px[i] = u + vx[i];
+      py[i] = v + vy[i];
+      if (px[i] < 0) px[i] += 1; else if (px[i] > 1) px[i] -= 1;
+      if (py[i] < 0) py[i] += 1; else if (py[i] > 1) py[i] -= 1;
+      x.fillRect(px[i] * W, py[i] * H, 1.6, 1.6);
     }
   }
-  if (reduced) { draw(9000); return; }
+
+  if (reduced) {
+    for (var s = 0; s < 500; s++) draw(4000);
+    return;
+  }
   (function loop(tm) { draw(tm || 0); requestAnimationFrame(loop); })();
 })();
 
@@ -182,7 +203,7 @@
     }).then(function (r) {
       if (r.ok || r.status === 409) {
         form.remove();
-        note.textContent = "you're on the list 〰️ one email when it opens";
+        note.textContent = "you're on the list — one email when it opens";
         note.classList.add("ok");
       } else {
         note.textContent = "couldn't save — try again in a minute";
