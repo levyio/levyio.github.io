@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="referrer" content="no-referrer" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QĀLĀ Studio — node lab (alpha 2)</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --black: #0a0a0c;
+    --stage: #101014;
+    --panel: #14141a;
+    --screen: #e8e6e0;
+    --text: #cfccc4;
+    --ash: #8a877f;
+    --violet: #a78fd0;
+    --violet-deep: #6d549c;
+    --line: #26262c;
+    --wire: #7b5ea7;
+    --modwire: #8a877f;
+    --serif: "Didot", "Bodoni 72", "Georgia", serif;
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.7rem 1.1rem;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+    z-index: 20;
+    background: var(--black);
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--screen);
+    white-space: nowrap;
+  }
+  header h1 a { color: inherit; text-decoration: none; }
+  header h1 small { color: var(--ash); letter-spacing: 0.1em; font-size: 0.65em; }
+  .mono {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ash);
+  }
+  button {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: none;
+    color: var(--screen);
+    border: 1px solid var(--line);
+    padding: 0.42rem 0.6rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button:hover { border-color: var(--violet); color: var(--violet); }
+  button.power { border-color: var(--ash); }
+  button.power.on { border-color: var(--violet); color: var(--violet); }
+  .bar { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
+  #workspace {
+    position: relative;
+    flex: 1;
+    overflow: auto;
+    background: radial-gradient(circle, #1a1a22 1px, transparent 1px);
+    background-size: 26px 26px;
+    cursor: grab;
+  }
+  #workspace.panning { cursor: grabbing; }
+  #canvasArea { position: relative; width: 3200px; height: 2200px; transform-origin: 0 0; }
+  #wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #wires path { pointer-events: stroke; cursor: pointer; }
+  .node {
+    position: absolute;
+    width: 196px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    user-select: none;
+  }
+  .node .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--line);
+    cursor: grab;
+    background: var(--stage);
+  }
+  .node .head .t {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--screen);
+  }
+  .node .head .x { border: none; padding: 0 0.2rem; font-size: 0.7rem; color: var(--ash); cursor: pointer; }
+  .node .head .x:hover { color: var(--violet); }
+  .node .body { padding: 0.55rem 0.6rem 0.65rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .param { display: flex; flex-direction: column; gap: 0.2rem; position: relative; }
+  .param .row { display: flex; justify-content: space-between; align-items: center; gap: 0.4rem; }
+  .param .lbl, .param .val { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash); }
+  .param .val { color: var(--violet); font-variant-numeric: tabular-nums; }
+  .mport {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--black); border: 1.5px solid var(--line);
+    display: inline-block; flex: none; cursor: crosshair;
+  }
+  .mport:hover, .mport.wired { border-color: var(--violet); background: var(--violet-deep); }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 2px; background: var(--line); outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 8px; height: 16px; background: var(--screen); cursor: ew-resize; border: none;
+  }
+  input[type="range"]::-moz-range-thumb { width: 8px; height: 16px; background: var(--screen); border: none; border-radius: 0; }
+  .port {
+    position: absolute;
+    top: 12px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--black);
+    border: 2px solid var(--ash);
+    cursor: crosshair;
+    z-index: 2;
+  }
+  .port:hover { border-color: var(--violet); background: var(--violet-deep); }
+  .port.in  { left: -7px; }
+  .port.out { right: -7px; }
+  .node canvas { display: block; width: 100%; background: #0d0d10; }
+  .node .toggle, .node .cycle { width: 100%; }
+  #hint {
+    position: fixed; bottom: 0.8rem; left: 0; right: 0;
+    text-align: center; pointer-events: none; z-index: 30;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="index.html">Qālā</a> Studio <small>· node lab · alpha 2</small></h1>
+  <div class="bar">
+    <button id="power" class="power">⏻ Power</button>
+    <button id="zoomOut">−</button>
+    <button id="zoomReset">100%</button>
+    <button id="zoomIn">+</button>
+    <span class="mono">add:</span>
+    <button data-add="tone">Tone</button>
+    <button data-add="noise">Noise</button>
+    <button data-add="mic">Mic</button>
+    <button data-add="lfo">LFO</button>
+    <button data-add="gain">Gain</button>
+    <button data-add="filter">Filter</button>
+    <button data-add="delay">Delay</button>
+    <button data-add="dist">Dist</button>
+    <button data-add="comp">Comp</button>
+    <button data-add="reverb">Reverb</button>
+    <button data-add="loop">No-Input Loop</button>
+    <button data-add="spectrum">Spectrum</button>
+    <button data-add="plate">Plate</button>
+    <button data-add="out">Out</button>
+    <span style="flex:1"></span>
+    <button id="save">Save</button>
+    <button id="export">Export</button>
+    <button id="import">Import</button>
+    <button id="clear">Clear</button>
+  </div>
+</header>
+
+<div id="workspace"><div id="canvasArea">
+  <svg id="wires" xmlns="http://www.w3.org/2000/svg"></svg>
+</div></div>
+
+<p id="hint" class="mono">drag heads to move · drag ● out → ● in (audio) or → ∘ beside a knob (modulate) · click a wire to cut · drag background to pan · ctrl+wheel or −/+ to zoom</p>
+<input type="file" id="importFile" accept="application/json" hidden />
+
+<script>
+/* ================================================================
+   QĀLĀ STUDIO alpha 2 — patchable instrument.
+   Solid wires carry audio; dashed wires modulate knobs (LFO → param).
+   Spectrum nodes pass audio through: place them anywhere in the chain
+   to see the harmonics at that point.
+   ================================================================ */
+const $ = (s) => document.querySelector(s);
+const area = $("#canvasArea"), wiresSvg = $("#wires"), ws = $("#workspace");
+
+let AC = null;
+let nextId = 1;
+let zoom = 1;
+const nodes = new Map();     // id -> {id,type,x,y,params,el,audio}
+const conns = [];            // {from,to,param|null,el}
+
+/* ---------- zoom & pan ---------- */
+function setZoom(z) {
+  zoom = Math.min(2, Math.max(0.35, z));
+  area.style.transform = `scale(${zoom})`;
+  $("#zoomReset").textContent = `${Math.round(zoom * 100)}%`;
+  drawWires();
+}
+$("#zoomIn").addEventListener("click", () => setZoom(zoom * 1.2));
+$("#zoomOut").addEventListener("click", () => setZoom(zoom / 1.2));
+$("#zoomReset").addEventListener("click", () => setZoom(1));
+ws.addEventListener("wheel", (e) => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  setZoom(zoom * (e.deltaY < 0 ? 1.08 : 0.92));
+}, { passive: false });
+// drag empty background to pan
+ws.addEventListener("pointerdown", (e) => {
+  if (e.target !== ws && e.target !== area && e.target !== wiresSvg) return;
+  ws.classList.add("panning");
+  const sx = e.clientX, sy = e.clientY, sl = ws.scrollLeft, st = ws.scrollTop;
+  const move = (ev) => { ws.scrollLeft = sl - (ev.clientX - sx); ws.scrollTop = st - (ev.clientY - sy); };
+  const up = () => { ws.classList.remove("panning"); document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); };
+  document.addEventListener("pointermove", move);
+  document.addEventListener("pointerup", up);
+});
+
+/* ---------- node type registry ----------
+   build(n) returns { in?, out?, apply:{k:fn}, mod?:{k:AudioParam}, analyser? } */
+const TYPES = {
+  tone: {
+    title: "Tone", ins: 0, outs: 1, mod: ["freq", "lvl"],
+    cycle: { k: "wave", values: ["sine", "triangle", "square", "sawtooth"] },
+    params: [
+      { k: "freq", l: "freq", min: 40, max: 2000, step: 1, def: 220, fmt: (v) => `${v} Hz` },
+      { k: "lvl", l: "level", min: 0, max: 0.5, step: 0.01, def: 0.15, fmt: (v) => (+v).toFixed(2) },
+    ],
+    build(n) {
+      const o = AC.createOscillator(); o.type = n.params.wave || "sine"; o.frequency.value = n.params.freq;
+      const g = AC.createGain(); g.gain.value = n.params.lvl;
+      o.connect(g); o.start();
+      return {
+        out: g,
+        apply: {
+          freq: (v) => o.frequency.setTargetAtTime(v, AC.currentTime, 0.03),
+          lvl: (v) => g.gain.setTargetAtTime(v, AC.currentTime, 0.03),
+          wave: (v) => { o.type = v; },
+        },
+        mod: { freq: o.frequency, lvl: g.gain },
+      };
+    },
+  },
+  noise: {
+    title: "Noise", ins: 0, outs: 1, mod: ["lvl"],
+    params: [{ k: "lvl", l: "level", min: 0, max: 0.4, step: 0.005, def: 0.03, fmt: (v) => (+v).toFixed(3) }],
+    build(n) {
+      const buf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+      const g = AC.createGain(); g.gain.value = n.params.lvl;
+      src.connect(g); src.start();
+      return { out: g, apply: { lvl: (v) => g.gain.setTargetAtTime(v, AC.currentTime, 0.03) }, mod: { lvl: g.gain } };
+    },
+  },
+  mic: {
+    title: "Mic", ins: 0, outs: 1, toggle: "open mic", mod: ["lvl"],
+    params: [{ k: "lvl", l: "level", min: 0, max: 1.5, step: 0.01, def: 0.5, fmt: (v) => (+v).toFixed(2) }],
+    build(n) {
+      const g = AC.createGain(); g.gain.value = n.params.lvl;
+      return { out: g, inGain: g, apply: { lvl: (v) => g.gain.setTargetAtTime(v, AC.currentTime, 0.03) }, mod: { lvl: g.gain } };
+    },
+    async onToggle(n, btn) {
+      if (n.micStream) {
+        n.micStream.getTracks().forEach((t) => t.stop()); n.micStream = null;
+        btn.textContent = "open mic"; return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia) { btn.textContent = "needs https/localhost"; return; }
+      try {
+        n.micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true } });
+        AC.createMediaStreamSource(n.micStream).connect(n.audio.inGain);
+        btn.textContent = "mic live";
+      } catch (e) {
+        btn.textContent = (e && e.name === "NotFoundError") ? "no mic on this machine" : "permission declined";
+      }
+    },
+  },
+  lfo: {
+    title: "LFO", ins: 0, outs: 1,
+    cycle: { k: "wave", values: ["sine", "triangle", "square", "sawtooth"] },
+    params: [
+      { k: "rate", l: "rate", min: 0.05, max: 30, step: 0.05, def: 0.8, fmt: (v) => `${(+v).toFixed(2)} Hz` },
+      { k: "depth", l: "depth", min: 0, max: 600, step: 0.5, def: 120, fmt: (v) => (+v).toFixed(1) },
+    ],
+    build(n) {
+      const o = AC.createOscillator(); o.type = n.params.wave || "sine"; o.frequency.value = n.params.rate;
+      const g = AC.createGain(); g.gain.value = n.params.depth;
+      o.connect(g); o.start();
+      return {
+        out: g,
+        apply: {
+          rate: (v) => o.frequency.setTargetAtTime(v, AC.currentTime, 0.05),
+          depth: (v) => g.gain.setTargetAtTime(v, AC.currentTime, 0.05),
+          wave: (v) => { o.type = v; },
+        },
+      };
+    },
+  },
+  gain: {
+    title: "Gain", ins: 1, outs: 1, mod: ["g"],
+    params: [{ k: "g", l: "gain", min: 0, max: 2, step: 0.01, def: 1, fmt: (v) => (+v).toFixed(2) }],
+    build(n) {
+      const g = AC.createGain(); g.gain.value = n.params.g;
+      return { in: g, out: g, apply: { g: (v) => g.gain.setTargetAtTime(v, AC.currentTime, 0.03) }, mod: { g: g.gain } };
+    },
+  },
+  filter: {
+    title: "Filter", ins: 1, outs: 1, mod: ["freq", "q"],
+    cycle: { k: "kind", values: ["bandpass", "lowpass", "highpass", "notch"] },
+    params: [
+      { k: "freq", l: "freq", min: 60, max: 8000, step: 1, def: 620, fmt: (v) => `${v} Hz` },
+      { k: "q", l: "q", min: 0.3, max: 12, step: 0.1, def: 2.2, fmt: (v) => (+v).toFixed(1) },
+    ],
+    build(n) {
+      const f = AC.createBiquadFilter(); f.type = n.params.kind || "bandpass";
+      f.frequency.value = n.params.freq; f.Q.value = n.params.q;
+      return {
+        in: f, out: f,
+        apply: {
+          freq: (v) => f.frequency.setTargetAtTime(v, AC.currentTime, 0.03),
+          q: (v) => f.Q.setTargetAtTime(v, AC.currentTime, 0.03),
+          kind: (v) => { f.type = v; },
+        },
+        mod: { freq: f.frequency, q: f.Q },
+      };
+    },
+  },
+  delay: {
+    title: "Delay", ins: 1, outs: 1, mod: ["t", "fb"],
+    params: [
+      { k: "t", l: "time", min: 4, max: 900, step: 1, def: 220, fmt: (v) => `${v} ms` },
+      { k: "fb", l: "feedback", min: 0, max: 0.95, step: 0.01, def: 0.35, fmt: (v) => (+v).toFixed(2) },
+    ],
+    build(n) {
+      const inG = AC.createGain();
+      const d = AC.createDelay(2); d.delayTime.value = n.params.t / 1000;
+      const fb = AC.createGain(); fb.gain.value = n.params.fb;
+      inG.connect(d); d.connect(fb); fb.connect(d);
+      return {
+        in: inG, out: d,
+        apply: { t: (v) => d.delayTime.setTargetAtTime(v / 1000, AC.currentTime, 0.05), fb: (v) => fb.gain.setTargetAtTime(v, AC.currentTime, 0.05) },
+        mod: { t: d.delayTime, fb: fb.gain },
+      };
+    },
+  },
+  dist: {
+    title: "Distortion", ins: 1, outs: 1, mod: ["lvl"],
+    params: [
+      { k: "drive", l: "drive", min: 1, max: 60, step: 0.5, def: 12, fmt: (v) => (+v).toFixed(1) },
+      { k: "lvl", l: "level", min: 0, max: 1.5, step: 0.01, def: 0.7, fmt: (v) => (+v).toFixed(2) },
+    ],
+    build(n) {
+      const sh = AC.createWaveShaper(); sh.oversample = "4x";
+      const mk = (d) => {
+        const c = new Float32Array(2048);
+        const norm = Math.tanh(d);
+        for (let i = 0; i < 2048; i++) { const x = (i / 1023.5) - 1; c[i] = Math.tanh(d * x) / norm; }
+        return c;
+      };
+      sh.curve = mk(n.params.drive);
+      const g = AC.createGain(); g.gain.value = n.params.lvl;
+      sh.connect(g);
+      return {
+        in: sh, out: g,
+        apply: { drive: (v) => { sh.curve = mk(v); }, lvl: (v) => g.gain.setTargetAtTime(v, AC.currentTime, 0.03) },
+        mod: { lvl: g.gain },
+      };
+    },
+  },
+  comp: {
+    title: "Compressor", ins: 1, outs: 1,
+    params: [
+      { k: "th", l: "threshold", min: -60, max: 0, step: 0.5, def: -24, fmt: (v) => `${(+v).toFixed(1)} dB` },
+      { k: "ratio", l: "ratio", min: 1, max: 20, step: 0.5, def: 4, fmt: (v) => `${(+v).toFixed(1)}:1` },
+    ],
+    build(n) {
+      const c = AC.createDynamicsCompressor();
+      c.threshold.value = n.params.th; c.ratio.value = n.params.ratio;
+      c.knee.value = 12; c.attack.value = 0.01; c.release.value = 0.2;
+      return { in: c, out: c, apply: { th: (v) => c.threshold.setTargetAtTime(v, AC.currentTime, 0.05), ratio: (v) => c.ratio.setTargetAtTime(v, AC.currentTime, 0.05) } };
+    },
+  },
+  reverb: {
+    title: "Reverb", ins: 1, outs: 1, mod: ["mix"],
+    params: [
+      { k: "size", l: "size", min: 0.2, max: 5, step: 0.1, def: 1.8, fmt: (v) => `${(+v).toFixed(1)} s` },
+      { k: "mix", l: "mix", min: 0, max: 1, step: 0.01, def: 0.35, fmt: (v) => (+v).toFixed(2) },
+    ],
+    build(n) {
+      const inG = AC.createGain(), outG = AC.createGain();
+      const dry = AC.createGain(), wet = AC.createGain();
+      dry.gain.value = 1 - n.params.mix; wet.gain.value = n.params.mix;
+      const conv = AC.createConvolver();
+      const impulse = (sec) => {
+        const len = Math.max(1, Math.floor(AC.sampleRate * sec));
+        const buf = AC.createBuffer(2, len, AC.sampleRate);
+        for (let ch = 0; ch < 2; ch++) {
+          const d = buf.getChannelData(ch);
+          for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+        }
+        return buf;
+      };
+      conv.buffer = impulse(n.params.size);
+      inG.connect(dry); dry.connect(outG);
+      inG.connect(conv); conv.connect(wet); wet.connect(outG);
+      return {
+        in: inG, out: outG,
+        apply: {
+          size: (v) => { conv.buffer = impulse(v); },
+          mix: (v) => { wet.gain.setTargetAtTime(v, AC.currentTime, 0.05); dry.gain.setTargetAtTime(1 - v, AC.currentTime, 0.05); },
+        },
+        mod: { mix: wet.gain },
+      };
+    },
+  },
+  loop: {
+    title: "No-Input Loop", ins: 1, outs: 1, mod: ["fb", "eq"],
+    params: [
+      { k: "fb", l: "feedback", min: 0, max: 1.08, step: 0.005, def: 1.02, fmt: (v) => (+v).toFixed(2) },
+      { k: "eq", l: "colour", min: 60, max: 4000, step: 1, def: 620, fmt: (v) => `${v} Hz` },
+      { k: "t", l: "time", min: 4, max: 400, step: 1, def: 71, fmt: (v) => `${v} ms` },
+    ],
+    build(n) {
+      const input = AC.createGain();
+      const eq = AC.createBiquadFilter(); eq.type = "bandpass"; eq.frequency.value = n.params.eq; eq.Q.value = 2.2;
+      const shaper = AC.createWaveShaper();
+      const curve = new Float32Array(1024);
+      for (let i = 0; i < 1024; i++) curve[i] = Math.tanh(2.2 * ((i / 511.5) - 1));
+      shaper.curve = curve;
+      const d = AC.createDelay(1); d.delayTime.value = n.params.t / 1000;
+      const fb = AC.createGain(); fb.gain.value = n.params.fb;
+      const buf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+      const bd = buf.getChannelData(0);
+      for (let i = 0; i < bd.length; i++) bd[i] = (Math.random() * 2 - 1) * 0.01;
+      const seed = AC.createBufferSource(); seed.buffer = buf; seed.loop = true;
+      seed.connect(input); seed.start();
+      input.connect(eq); eq.connect(shaper); shaper.connect(d); d.connect(fb); fb.connect(input);
+      return {
+        in: input, out: d,
+        apply: {
+          fb: (v) => fb.gain.setTargetAtTime(v, AC.currentTime, 0.05),
+          eq: (v) => eq.frequency.setTargetAtTime(v, AC.currentTime, 0.05),
+          t: (v) => d.delayTime.setTargetAtTime(v / 1000, AC.currentTime, 0.05),
+        },
+        mod: { fb: fb.gain, eq: eq.frequency },
+      };
+    },
+  },
+  spectrum: {
+    title: "Spectrum", ins: 1, outs: 1, canvas: 120,
+    params: [],
+    build(n) {
+      const an = AC.createAnalyser(); an.fftSize = 4096; an.smoothingTimeConstant = 0.7;
+      return { in: an, out: an, analyser: an, apply: {} };
+    },
+  },
+  plate: {
+    title: "Plate", ins: 1, outs: 0, canvas: 168,
+    params: [
+      { k: "flow", l: "flow", min: 0, max: 2, step: 0.05, def: 0.9, fmt: (v) => (+v).toFixed(2) },
+      { k: "grains", l: "grains", min: 1000, max: 8000, step: 500, def: 3500, fmt: (v) => (+v).toLocaleString() },
+    ],
+    build(n) {
+      const an = AC.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0.82;
+      return { in: an, analyser: an, apply: {} };
+    },
+  },
+  out: {
+    title: "Out", ins: 1, outs: 0,
+    params: [{ k: "lvl", l: "fader", min: -48, max: 0, step: 0.5, def: -12, fmt: (v) => `${(+v).toFixed(1)} dB` }],
+    build(n) {
+      const g = AC.createGain(); g.gain.value = Math.pow(10, n.params.lvl / 20);
+      const lim = AC.createDynamicsCompressor(); // the limiter is not optional
+      lim.threshold.value = -6; lim.knee.value = 0; lim.ratio.value = 20;
+      lim.attack.value = 0.002; lim.release.value = 0.25;
+      g.connect(lim); lim.connect(AC.destination);
+      return { in: g, apply: { lvl: (v) => g.gain.setTargetAtTime(Math.pow(10, v / 20), AC.currentTime, 0.05) } };
+    },
+  },
+};
+
+/* ---------- node UI ---------- */
+function addNode(type, x, y, params) {
+  const spec = TYPES[type];
+  const id = nextId++;
+  const n = { id, type, x, y, params: {}, el: null, audio: null };
+  for (const p of spec.params) n.params[p.k] = (params && params[p.k] !== undefined) ? params[p.k] : p.def;
+  if (spec.cycle) n.params[spec.cycle.k] = (params && params[spec.cycle.k]) || spec.cycle.values[0];
+
+  const el = document.createElement("div");
+  el.className = "node"; el.style.left = x + "px"; el.style.top = y + "px";
+  el.dataset.id = id;
+  let html = `<div class="head"><span class="t">${spec.title}</span><button class="x" title="delete">✕</button></div><div class="body">`;
+  if (spec.canvas) html += `<canvas width="182" height="${spec.canvas}"></canvas>`;
+  for (const p of spec.params) {
+    const modDot = (spec.mod || []).includes(p.k) ? `<span class="mport" data-param="${p.k}" title="modulate ${p.l}"></span>` : "";
+    html += `<div class="param"><div class="row">${modDot}<span class="lbl">${p.l}</span><span class="val" data-v="${p.k}">${p.fmt(n.params[p.k])}</span></div>
+      <input type="range" data-k="${p.k}" min="${p.min}" max="${p.max}" step="${p.step}" value="${n.params[p.k]}" /></div>`;
+  }
+  if (spec.cycle) html += `<button class="cycle" data-k="${spec.cycle.k}">${spec.cycle.k}: ${n.params[spec.cycle.k]}</button>`;
+  if (spec.toggle) html += `<button class="toggle">${spec.toggle}</button>`;
+  html += `</div>`;
+  if (spec.ins) html += `<div class="port in" title="audio in"></div>`;
+  if (spec.outs) html += `<div class="port out" title="audio out"></div>`;
+  el.innerHTML = html;
+  area.appendChild(el);
+  n.el = el;
+  nodes.set(id, n);
+
+  el.querySelectorAll("input[type=range]").forEach((sl) => {
+    sl.addEventListener("input", () => {
+      const k = sl.dataset.k, v = +sl.value;
+      n.params[k] = v;
+      el.querySelector(`[data-v="${k}"]`).textContent = spec.params.find((p) => p.k === k).fmt(v);
+      if (n.audio && n.audio.apply[k]) n.audio.apply[k](v);
+      persist();
+    });
+    sl.addEventListener("pointerdown", (e) => e.stopPropagation());
+  });
+  if (spec.cycle) {
+    const btn = el.querySelector(".cycle");
+    btn.addEventListener("click", () => {
+      const vals = spec.cycle.values, k = spec.cycle.k;
+      n.params[k] = vals[(vals.indexOf(n.params[k]) + 1) % vals.length];
+      btn.textContent = `${k}: ${n.params[k]}`;
+      if (n.audio && n.audio.apply[k]) n.audio.apply[k](n.params[k]);
+      persist();
+    });
+  }
+  if (spec.toggle) {
+    const btn = el.querySelector(".toggle");
+    btn.addEventListener("click", () => { if (AC) spec.onToggle(n, btn); else flash("power on first"); });
+  }
+  el.querySelector(".x").addEventListener("click", () => removeNode(id));
+  dragify(n);
+  if (spec.outs) portify(el.querySelector(".port.out"), n);
+
+  if (AC) buildAudio(n);
+  persist();
+  return n;
+}
+
+function removeNode(id) {
+  const n = nodes.get(id);
+  if (!n) return;
+  for (let i = conns.length - 1; i >= 0; i--) {
+    if (conns[i].from === id || conns[i].to === id) cutConn(i);
+  }
+  if (n.micStream) n.micStream.getTracks().forEach((t) => t.stop());
+  try { if (n.audio?.out) n.audio.out.disconnect(); } catch {}
+  n.el.remove();
+  nodes.delete(id);
+  persist();
+}
+
+function buildAudio(n) { n.audio = TYPES[n.type].build(n); }
+
+/* ---------- dragging (zoom-aware) ---------- */
+function dragify(n) {
+  const head = n.el.querySelector(".head");
+  head.addEventListener("pointerdown", (e) => {
+    if (e.target.classList.contains("x")) return;
+    e.preventDefault();
+    const sx = e.clientX, sy = e.clientY, ox = n.x, oy = n.y;
+    head.setPointerCapture(e.pointerId);
+    const move = (ev) => {
+      n.x = Math.max(0, ox + (ev.clientX - sx) / zoom);
+      n.y = Math.max(0, oy + (ev.clientY - sy) / zoom);
+      n.el.style.left = n.x + "px"; n.el.style.top = n.y + "px";
+      drawWires();
+    };
+    const up = () => { head.removeEventListener("pointermove", move); head.removeEventListener("pointerup", up); persist(); };
+    head.addEventListener("pointermove", move);
+    head.addEventListener("pointerup", up);
+  });
+}
+
+/* ---------- wiring: audio (solid) + modulation (dashed) ---------- */
+function portify(portEl, n) {
+  portEl.addEventListener("pointerdown", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const tmp = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    tmp.setAttribute("stroke", "var(--wire)"); tmp.setAttribute("stroke-width", "2");
+    tmp.setAttribute("fill", "none"); tmp.setAttribute("stroke-dasharray", "5 4");
+    wiresSvg.appendChild(tmp);
+    const p0 = portCenter(portEl);
+    const move = (ev) => {
+      const r = area.getBoundingClientRect();
+      tmp.setAttribute("d", wirePath(p0, { x: (ev.clientX - r.left) / zoom, y: (ev.clientY - r.top) / zoom }));
+    };
+    const up = (ev) => {
+      document.removeEventListener("pointermove", move);
+      document.removeEventListener("pointerup", up);
+      tmp.remove();
+      const t = document.elementFromPoint(ev.clientX, ev.clientY);
+      if (!t) return;
+      if (t.classList.contains("port") && t.classList.contains("in")) {
+        connect(n.id, +t.closest(".node").dataset.id, null);
+      } else if (t.classList.contains("mport")) {
+        connect(n.id, +t.closest(".node").dataset.id, t.dataset.param);
+      }
+    };
+    document.addEventListener("pointermove", move);
+    document.addEventListener("pointerup", up);
+  });
+}
+
+function connect(fromId, toId, param) {
+  if (fromId === toId) return;
+  if (conns.some((c) => c.from === fromId && c.to === toId && c.param === param)) return;
+  const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  el.setAttribute("stroke", param ? "var(--modwire)" : "var(--wire)");
+  el.setAttribute("stroke-width", param ? "1.6" : "2.2");
+  if (param) el.setAttribute("stroke-dasharray", "4 4");
+  el.setAttribute("fill", "none");
+  el.style.cursor = "pointer";
+  el.addEventListener("click", () => { const i = conns.findIndex((c) => c.el === el); if (i >= 0) { cutConn(i); persist(); } });
+  wiresSvg.appendChild(el);
+  const c = { from: fromId, to: toId, param: param || null, el };
+  conns.push(c);
+  if (AC) audioConnect(c);
+  markModDots();
+  drawWires();
+  persist();
+}
+
+function audioConnect(c) {
+  const a = nodes.get(c.from)?.audio, bn = nodes.get(c.to);
+  if (!a?.out || !bn?.audio) return;
+  if (c.param) {
+    const tgt = bn.audio.mod?.[c.param];
+    if (tgt) a.out.connect(tgt);
+  } else if (bn.audio.in) {
+    a.out.connect(bn.audio.in);
+  }
+}
+function cutConn(i) {
+  const c = conns[i];
+  const a = nodes.get(c.from)?.audio, bn = nodes.get(c.to);
+  try {
+    if (a?.out && bn?.audio) {
+      if (c.param) { const tgt = bn.audio.mod?.[c.param]; if (tgt) a.out.disconnect(tgt); }
+      else if (bn.audio.in) a.out.disconnect(bn.audio.in);
+    }
+  } catch {}
+  c.el.remove();
+  conns.splice(i, 1);
+  markModDots();
+}
+function markModDots() {
+  document.querySelectorAll(".mport").forEach((d) => d.classList.remove("wired"));
+  for (const c of conns) {
+    if (!c.param) continue;
+    const dot = nodes.get(c.to)?.el.querySelector(`.mport[data-param="${c.param}"]`);
+    if (dot) dot.classList.add("wired");
+  }
+}
+
+function portCenter(portEl) {
+  const r = portEl.getBoundingClientRect(), a = area.getBoundingClientRect();
+  return { x: (r.left - a.left + r.width / 2) / zoom, y: (r.top - a.top + r.height / 2) / zoom };
+}
+function wirePath(p0, p1) {
+  const dx = Math.max(40, Math.abs(p1.x - p0.x) / 2);
+  return `M ${p0.x} ${p0.y} C ${p0.x + dx} ${p0.y}, ${p1.x - dx} ${p1.y}, ${p1.x} ${p1.y}`;
+}
+function drawWires() {
+  for (const c of conns) {
+    const f = nodes.get(c.from), t = nodes.get(c.to);
+    if (!f || !t) continue;
+    const po = f.el.querySelector(".port.out");
+    const pi = c.param ? t.el.querySelector(`.mport[data-param="${c.param}"]`) : t.el.querySelector(".port.in");
+    if (po && pi) c.el.setAttribute("d", wirePath(portCenter(po), portCenter(pi)));
+  }
+}
+ws.addEventListener("scroll", drawWires);
+
+/* ---------- power ---------- */
+$("#power").addEventListener("click", () => {
+  if (AC) {
+    AC.close(); AC = null;
+    $("#power").classList.remove("on"); $("#power").textContent = "⏻ Power";
+    for (const n of nodes.values()) n.audio = null;
+    return;
+  }
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  for (const n of nodes.values()) buildAudio(n);
+  for (const c of conns) audioConnect(c);
+  $("#power").classList.add("on"); $("#power").textContent = "⏻ Live";
+});
+
+/* ---------- visual nodes: plates + spectra ---------- */
+const freqBuf = new Uint8Array(2048), tdBuf = new Uint8Array(1024);
+function tickVisuals() {
+  for (const n of nodes.values()) {
+    if (n.type === "plate") drawPlate(n);
+    else if (n.type === "spectrum") drawSpectrum(n);
+  }
+  requestAnimationFrame(tickVisuals);
+}
+
+function drawPlate(n) {
+  const cv = n.el.querySelector("canvas"), g = cv.getContext("2d");
+  if (!n.sim) {
+    const N = 8000;
+    n.sim = { px: new Float32Array(N), py: new Float32Array(N), m: 3, nn: 2, drive: 0 };
+    for (let i = 0; i < N; i++) { n.sim.px[i] = Math.random(); n.sim.py[i] = Math.random(); }
+  }
+  const s = n.sim;
+  if (AC && n.audio?.analyser) {
+    const an = n.audio.analyser;
+    an.getByteFrequencyData(freqBuf);
+    let peak = 0, pi = 0;
+    const lim = an.frequencyBinCount;
+    for (let i = 2; i < Math.min(256, lim); i++) if (freqBuf[i] > peak) { peak = freqBuf[i]; pi = i; }
+    const hz = pi * (AC.sampleRate / an.fftSize);
+    s.m = 1 + Math.min(9, Math.round(Math.log2(1 + hz / 90) * 2.2));
+    s.nn = 1 + Math.min(9, Math.round(Math.log2(1 + hz / 260) * 2.0));
+    an.getByteTimeDomainData(tdBuf);
+    let sum = 0;
+    for (let i = 0; i < tdBuf.length; i++) { const v = (tdBuf[i] - 128) / 128; sum += v * v; }
+    s.drive = s.drive * 0.85 + Math.min(1, Math.sqrt(sum / tdBuf.length) * 2.4) * 0.15;
+  }
+  const count = Math.min(n.params.grains, s.px.length);
+  const jit = 0.0012 + s.drive * 0.05 * (0.5 + n.params.flow);
+  const mp = s.m * Math.PI, np = s.nn * Math.PI;
+  g.fillStyle = "#0d0d10"; g.fillRect(0, 0, cv.width, cv.height);
+  g.fillStyle = "rgba(232,230,224,0.9)";
+  for (let i = 0; i < count; i++) {
+    const A = Math.abs(Math.sin(mp * s.px[i]) * Math.sin(np * s.py[i]) + Math.sin(np * s.px[i]) * Math.sin(mp * s.py[i]));
+    const st = jit * A;
+    s.px[i] += (Math.random() - 0.5) * st;
+    s.py[i] += (Math.random() - 0.5) * st;
+    if (s.px[i] < 0) s.px[i] += 1; else if (s.px[i] > 1) s.px[i] -= 1;
+    if (s.py[i] < 0) s.py[i] += 1; else if (s.py[i] > 1) s.py[i] -= 1;
+    g.fillRect(s.px[i] * cv.width, s.py[i] * cv.height, 1, 1);
+  }
+}
+
+/* the harmonics visualiser: log spectrum + fundamental, harmonics, subharmonics */
+const FMIN = 30, FMAX = 8000;
+function xOfHz(hz, w) { return w * Math.log(hz / FMIN) / Math.log(FMAX / FMIN); }
+function drawSpectrum(n) {
+  const cv = n.el.querySelector("canvas"), g = cv.getContext("2d");
+  const w = cv.width, h = cv.height;
+  g.fillStyle = "#0d0d10"; g.fillRect(0, 0, w, h);
+  if (!(AC && n.audio?.analyser)) {
+    g.fillStyle = "rgba(138,135,127,0.5)";
+    g.font = "9px ui-monospace, Menlo, monospace";
+    g.fillText("power on", 8, h / 2);
+    return;
+  }
+  const an = n.audio.analyser;
+  an.getByteFrequencyData(freqBuf);
+  const binHz = AC.sampleRate / an.fftSize;
+  // spectrum trace over log frequency
+  g.strokeStyle = "rgba(232,230,224,0.75)";
+  g.lineWidth = 1;
+  g.beginPath();
+  let started = false;
+  for (let x = 0; x < w; x++) {
+    const hz = FMIN * Math.pow(FMAX / FMIN, x / w);
+    const bin = Math.min(freqBuf.length - 1, Math.round(hz / binHz));
+    const v = freqBuf[bin] / 255;
+    const y = h - 12 - v * (h - 20);
+    if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
+  }
+  g.stroke();
+  // fundamental = strongest bin in range
+  let peak = 0, pi = 0;
+  const maxBin = Math.min(freqBuf.length - 1, Math.floor(FMAX / binHz));
+  for (let i = Math.max(2, Math.floor(FMIN / binHz)); i < maxBin; i++) {
+    if (freqBuf[i] > peak) { peak = freqBuf[i]; pi = i; }
+  }
+  if (peak > 40) {
+    const f0 = pi * binHz;
+    // harmonics kf — violet
+    g.strokeStyle = "rgba(167,143,208,0.85)";
+    for (let k = 1; k <= 8; k++) {
+      const hz = f0 * k;
+      if (hz > FMAX) break;
+      const x = xOfHz(hz, w);
+      g.globalAlpha = k === 1 ? 1 : Math.max(0.25, 1 - k * 0.11);
+      g.beginPath(); g.moveTo(x, 6); g.lineTo(x, h - 12); g.stroke();
+    }
+    // subharmonics f/k — ash, dashed
+    g.strokeStyle = "rgba(138,135,127,0.8)";
+    g.setLineDash([3, 3]);
+    for (let k = 2; k <= 5; k++) {
+      const hz = f0 / k;
+      if (hz < FMIN) break;
+      const x = xOfHz(hz, w);
+      g.globalAlpha = Math.max(0.25, 1 - k * 0.14);
+      g.beginPath(); g.moveTo(x, 6); g.lineTo(x, h - 12); g.stroke();
+    }
+    g.setLineDash([]);
+    g.globalAlpha = 1;
+    g.fillStyle = "rgba(167,143,208,0.95)";
+    g.font = "9px ui-monospace, Menlo, monospace";
+    g.fillText(`f₀ ${f0.toFixed(0)} Hz`, 6, 12);
+    g.fillStyle = "rgba(138,135,127,0.8)";
+    g.fillText("— harmonics · ┄ subharmonics", 6, h - 2);
+  }
+}
+
+/* ---------- persistence ---------- */
+function snapshot() {
+  return {
+    nextId,
+    nodes: [...nodes.values()].map((n) => ({ id: n.id, type: n.type, x: n.x, y: n.y, params: n.params })),
+    conns: conns.map((c) => [c.from, c.to, c.param]),
+  };
+}
+function persist() { try { localStorage.setItem("adva-studio-patch", JSON.stringify(snapshot())); } catch {} }
+function loadPatch(p) {
+  for (const id of [...nodes.keys()]) removeNode(id);
+  conns.length = 0;
+  nextId = 1;
+  const idMap = new Map();
+  for (const sn of p.nodes) {
+    if (!TYPES[sn.type]) continue;
+    const n = addNode(sn.type, sn.x, sn.y, sn.params);
+    idMap.set(sn.id, n.id);
+  }
+  for (const c of p.conns) {
+    const [f, t, param] = c;
+    if (idMap.has(f) && idMap.has(t)) connect(idMap.get(f), idMap.get(t), param || null);
+  }
+  drawWires();
+}
+
+$("#save").addEventListener("click", () => { persist(); flash("saved locally"); });
+$("#export").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(snapshot(), null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `adva-patch-${Date.now()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+});
+$("#import").addEventListener("click", () => $("#importFile").click());
+$("#importFile").addEventListener("change", (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  f.text().then((t) => { try { loadPatch(JSON.parse(t)); } catch { flash("not a patch file"); } });
+  e.target.value = "";
+});
+$("#clear").addEventListener("click", () => { for (const id of [...nodes.keys()]) removeNode(id); persist(); });
+
+document.querySelectorAll("[data-add]").forEach((b) => {
+  b.addEventListener("click", () => {
+    addNode(b.dataset.add, (ws.scrollLeft + 80) / zoom + Math.random() * 180, (ws.scrollTop + 90) / zoom + Math.random() * 140);
+  });
+});
+
+function flash(msg) {
+  const h = $("#hint");
+  const old = h.textContent;
+  h.textContent = msg;
+  setTimeout(() => { h.textContent = old; }, 2200);
+}
+
+/* ---------- boot: restore or default patch ---------- */
+let restored = null;
+try { restored = JSON.parse(localStorage.getItem("adva-studio-patch")); } catch {}
+if (restored && restored.nodes?.length) {
+  loadPatch(restored);
+} else {
+  const nz = addNode("noise", 60, 140);
+  const lp = addNode("loop", 320, 100);
+  const sp = addNode("spectrum", 590, 90);
+  const ot = addNode("out", 850, 110);
+  const pl = addNode("plate", 590, 330);
+  const lf = addNode("lfo", 60, 380);
+  connect(nz.id, lp.id, null);
+  connect(lp.id, sp.id, null);
+  connect(sp.id, ot.id, null);
+  connect(lp.id, pl.id, null);
+  connect(lf.id, lp.id, "eq");   // the LFO slowly sweeps the loop's colour
+}
+requestAnimationFrame(drawWires);
+requestAnimationFrame(tickVisuals);
+
+/* dev hook for automated checks and future scripting */
+window.__studio = { addNode, connect, nodes, conns, snapshot, setZoom };
+</script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="referrer" content="no-referrer" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How it works — Chladni plates &amp; cymatics — QĀLĀ</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --black: #0a0a0c;
+    --stage: #101014;
+    --screen: #e8e6e0;
+    --text: #cfccc4;
+    --ash: #8a877f;
+    --violet: #a78fd0;
+    --violet-deep: #6d549c;
+    --line: #26262c;
+    --serif: "Didot", "Bodoni 72", "Playfair Display", "Georgia", serif;
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--violet-deep); color: var(--screen); }
+  a { color: var(--violet); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+  .mono {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ash);
+  }
+  header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+    padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--line);
+  }
+  header h1 {
+    font-family: var(--serif); font-weight: 400; font-size: 1.15rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--screen);
+  }
+  header h1 a { color: inherit; text-decoration: none; }
+  main { max-width: 660px; margin: 0 auto; padding: 4.5rem 1.5rem 6rem; }
+  .lede {
+    font-family: var(--serif);
+    font-size: clamp(1.35rem, 3.4vw, 1.85rem);
+    line-height: 1.45; color: var(--screen); text-wrap: balance;
+    margin-bottom: 3.5rem;
+  }
+  section { margin-bottom: 3.6rem; }
+  .eyebrow-row { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.6rem; }
+  .eyebrow-row::after {
+    content: ""; flex: 1; border-bottom: 1px solid var(--line); transform: translateY(-4px);
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(1.5rem, 3.6vw, 2rem);
+    color: var(--screen); line-height: 1.25; margin-bottom: 1.1rem; text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--violet);
+    margin: 2rem 0 0.7rem;
+  }
+  p + p { margin-top: 1.1em; }
+  em { font-style: italic; color: var(--screen); }
+  figure { margin: 2.4rem 0; }
+  figure canvas { display: block; width: 100%; height: auto; background: #0d0d10; border: 1px solid var(--line); }
+  figcaption { margin-top: 0.7rem; }
+  .plates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
+  @media (max-width: 560px) { .plates { grid-template-columns: 1fr; } }
+  dl.facts {
+    display: grid; grid-template-columns: max-content 1fr; gap: 0.7rem 1.8rem;
+    align-items: baseline; margin: 1.6rem 0 0;
+  }
+  dl.facts dt {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.13em;
+    text-transform: uppercase; color: var(--ash); white-space: nowrap;
+  }
+  dl.facts dd { color: var(--text); }
+  @media (max-width: 520px) {
+    dl.facts { grid-template-columns: 1fr; gap: 0.15rem; }
+    dl.facts dd { margin-bottom: 0.9rem; }
+  }
+  .cta {
+    display: inline-block; font-family: var(--mono); font-size: 0.74rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--screen);
+    border: 1px solid var(--ash); padding: 0.85rem 1.6rem; text-decoration: none;
+    transition: border-color 0.2s, color 0.2s; margin-top: 1.4rem;
+  }
+  .cta:hover { border-color: var(--violet); color: var(--violet); }
+  footer { border-top: 1px solid var(--line); padding: 2rem 1.5rem 4rem; }
+  footer .inner { max-width: 660px; margin: 0 auto; }
+  footer p { font-size: 0.85rem; color: var(--ash); }
+  footer p + p { margin-top: 0.6em; }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="index.html">Qālā</a> · How it works</h1>
+  <span class="mono">Chladni plates &amp; cymatics</span>
+</header>
+
+<main>
+  <p class="lede">Put sand on a metal plate and play a note into it. The grains flee the parts that move and pile up along the lines that stand still. What you are looking at is the shape of the sound.</p>
+
+  <section>
+    <div class="eyebrow-row"><span class="mono">I &nbsp;·&nbsp; What you are seeing</span></div>
+    <h2>Nodal lines: the places a vibration forgets to touch.</h2>
+    <p>A plate driven at the right frequency doesn't shake all over. It settles into a <em>standing wave</em> — a pattern that stays put while the material heaves up and down inside it. Some regions swing hardest; these are the <em>antinodes</em>. Between them run curves where the plate barely moves at all: the <em>nodal lines</em>.</p>
+    <p>Loose grains can't stay on an antinode — every cycle throws them a little further. They wander until they stumble onto a nodal line, and there, with nothing to push them, they stop. Given a few seconds, every grain on the plate has found the stillness. The pattern that appears is not drawn by anything; it is what remains after motion has swept the rest away.</p>
+    <p>Physicists call each of these patterns an <em>eigenmode</em>, and the frequency that summons it an <em>eigenfrequency</em>. A plate has an endless ladder of them. Change the pitch and the figure doesn't distort — it dissolves and a different one takes its place.</p>
+    <figure>
+      <div class="plates">
+        <canvas class="fig" data-m="3" data-n="2" width="260" height="260"></canvas>
+        <canvas class="fig" data-m="5" data-n="4" width="260" height="260"></canvas>
+        <canvas class="fig" data-m="8" data-n="5" width="260" height="260"></canvas>
+      </div>
+      <figcaption class="mono">Three modes of a square plate — (3,2), (5,4), (8,5) — settled from random dust, computed live</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <div class="eyebrow-row"><span class="mono">II &nbsp;·&nbsp; What decides the figure</span></div>
+    <h2>Pitch, plate, and edge.</h2>
+    <h3>Frequency</h3>
+    <p>The higher the tone, the shorter the waves that fit across the plate, and the finer the mesh of nodal lines. Low notes draw a few great arcs; high notes draw lattices.</p>
+    <h3>Material</h3>
+    <p>Chladni's law ties the frequency of a mode to the plate's own physics: it rises with thickness, falls with the square of the plate's width, and scales with <em>√(E/ρ)</em> — the stiffness of the material divided by its density. A stiff, light plate (glass, aluminium) carries bending waves fast, so a given note draws a <em>coarser</em> figure. A dense or soft plate (brass, acrylic) draws a finer one, and stops ringing sooner.</p>
+    <h3>Shape and edge</h3>
+    <p>A circle gives rings and spokes; a square gives crosses and lattices; a violin plate gives the figures luthiers still use to tune wood by eye. And it matters enormously <em>where the plate is held</em>: a clamp is a forced nodal line, so the same plate held at the centre and held at the rim produces two different families of patterns.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow-row"><span class="mono">III &nbsp;·&nbsp; Where it comes from</span></div>
+    <h2>A lawyer with a violin bow, and the woman who solved him.</h2>
+    <p><em>Ernst Chladni</em> (1756–1827) trained in law, turned to physics after his father's death, and became the person we now credit as the father of acoustics — and, separately, of meteoritics, for arguing that stones really do fall from the sky. In 1787 he published <em>Entdeckungen über die Theorie des Klanges</em> — "Discoveries in the Theory of Sound" — describing the technique that still carries his name: sand on a metal plate, a violin bow drawn along the edge, and the sudden appearance of a figure.</p>
+    <p>He toured Europe demonstrating it. In Paris he performed for Napoleon, who was impressed enough to fund the translation of Chladni's book and to put up a prize through the Institut de France for whoever could give the effect a mathematical theory — the figures were beautiful, but nobody could say <em>why</em> they were what they were.</p>
+    <p>The prize was won in 1816 by <em>Sophie Germain</em>, on her third attempt, after two rejected submissions. Barred as a woman from the École Polytechnique, she had learned mathematics from borrowed lecture notes under a man's name. Her work on the problem became a foundation of the theory of elasticity — the mathematics of how surfaces bend. Gustav Kirchhoff and others later completed the plate theory that lets a computer, or this website, predict the figures instead of merely admiring them.</p>
+    <dl class="facts">
+      <dt>1787</dt><dd>Chladni publishes the sand-figure method</dd>
+      <dt>1809</dt><dd>Demonstration in Paris; Napoleon endows a prize for a theory</dd>
+      <dt>1816</dt><dd>Sophie Germain wins it — first woman awarded by the Paris Academy</dd>
+      <dt>1831</dt><dd>Faraday describes standing waves on vibrated liquids</dd>
+      <dt>1967</dt><dd>Hans Jenny publishes <em>Kymatik</em> and names the field <em>cymatics</em></dd>
+    </dl>
+  </section>
+
+  <section>
+    <div class="eyebrow-row"><span class="mono">IV &nbsp;·&nbsp; Cymatics</span></div>
+    <h2>The same effect, once it left the laboratory.</h2>
+    <p>A century and a half after Chladni, the Swiss physician and naturalist <em>Hans Jenny</em> took the experiment further — pastes, powders, liquids, iron filings, and a device he called the <em>tonoscope</em>, which let a person speak or sing directly into a membrane and watch the form their own voice made. He coined the word <em>cymatics</em>, from the Greek <em>kyma</em>, a wave, and published the images that carried the phenomenon out of physics and into art and design.</p>
+    <p>A word of honesty, since cymatics attracts mystical claims: what is demonstrably true is remarkable enough. Vibration organizes matter into ordered, repeatable, calculable forms. It does not follow that particular frequencies heal, or that the patterns encode hidden language. The physics is real; the meaning is what an artist brings to it.</p>
+  </section>
+
+  <section>
+    <div class="eyebrow-row"><span class="mono">V &nbsp;·&nbsp; What Qālā does with it</span></div>
+    <h2>A plate you can play, in a browser.</h2>
+    <p>Qālā models a square plate as a sum of standing waves. Each frequency it hears — from its own no-input feedback loop, from the tone channels, or from your microphone — is mapped to a mode of the plate, and up to three sound at once, <em>superposed</em>, exactly as real harmonics superpose on real metal. Tens of thousands of grains then live on that field: each one drifts, drains off the moving regions, grips where the plate is still, and is thrown loose again when a beat strikes.</p>
+    <p>What is faithful: standing-wave fields and their nodal lines; superposition of several tones; grains migrating to stillness; material stiffness and damping changing both the figure and how quickly it settles; the plate as a surface that oscillates in three dimensions over time.</p>
+    <p>What is licence: the plate is idealized (no clamp geometry, no true eigenvalue solve for arbitrary shapes), the material presets are expressive rather than metrologically exact, and the grains may paint themselves with the colours of a photograph, which no charcoal has ever done. It is an instrument built on physics, not a physics instrument.</p>
+    <a class="cta" href="plate.html">Play it →</a>
+  </section>
+</main>
+
+<footer>
+  <div class="inner">
+    <p>Qālā is an instrument by Noam Stuart-Levy, grown out of a performance in Jerusalem, 2017.</p>
+    <p>Historical sources: Chladni, <em>Entdeckungen über die Theorie des Klanges</em> (1787); the Institut de France prize and Sophie Germain's 1816 award; Hans Jenny, <em>Kymatik</em> (1967). Plate physics after Kirchhoff–Love plate theory.</p>
+  </div>
+</footer>
+
+<script>
+/* the three figures above are not pictures — each is a small plate,
+   settled from random dust by the same rule the instrument uses */
+(function () {
+  document.querySelectorAll("canvas.fig").forEach(function (cv) {
+    var m = +cv.dataset.m, n = +cv.dataset.n;
+    var x = cv.getContext("2d"), W = cv.width, H = cv.height, PI = Math.PI;
+    var N = 9000;
+    var px = new Float32Array(N), py = new Float32Array(N);
+    var vx = new Float32Array(N), vy = new Float32Array(N);
+    for (var i = 0; i < N; i++) { px[i] = Math.random(); py[i] = Math.random(); }
+    var mp = m * PI, np = n * PI;
+    for (var step = 0; step < 900; step++) {
+      for (var j = 0; j < N; j++) {
+        var u = px[j], v = py[j];
+        var smx = Math.sin(mp * u), cmx = Math.cos(mp * u);
+        var snx = Math.sin(np * u), cnx = Math.cos(np * u);
+        var smy = Math.sin(mp * v), cmy = Math.cos(mp * v);
+        var sny = Math.sin(np * v), cny = Math.cos(np * v);
+        var A = smx * sny + snx * smy;
+        var dAdx = mp * cmx * sny + np * cnx * smy;
+        var dAdy = np * smx * cny + mp * snx * cmy;
+        var aAbs = Math.abs(A);
+        vx[j] = vx[j] * 0.86 - A * dAdx * 0.00035 + (Math.random() - 0.5) * 0.0016 * aAbs;
+        vy[j] = vy[j] * 0.86 - A * dAdy * 0.00035 + (Math.random() - 0.5) * 0.0016 * aAbs;
+        px[j] = u + vx[j]; py[j] = v + vy[j];
+        if (px[j] < 0) px[j] += 1; else if (px[j] > 1) px[j] -= 1;
+        if (py[j] < 0) py[j] += 1; else if (py[j] > 1) py[j] -= 1;
+      }
+    }
+    x.fillStyle = "#0d0d10"; x.fillRect(0, 0, W, H);
+    x.fillStyle = "rgba(232,230,224,0.85)";
+    for (var k = 0; k < N; k++) x.fillRect(px[k] * W, py[k] * H, 1.4, 1.4);
+  });
+})();
+</script>
+</body>
+</html>

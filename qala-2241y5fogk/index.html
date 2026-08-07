@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="referrer" content="no-referrer" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Qālā</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --black: #0a0a0c;
+    --screen: #e8e6e0;
+    --text: #cfccc4;
+    --ash: #8a877f;
+    --violet: #a78fd0;
+    --line: #26262c;
+    --serif: "Didot", "Bodoni 72", "Playfair Display", "Georgia", serif;
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { height: 100%; }
+  body { min-height: 100%; }
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.8rem;
+    padding: 3rem 1.5rem 2rem;
+    text-align: center;
+  }
+  #field { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+  .mono {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ash);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(3.4rem, 11vw, 7rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--screen);
+    line-height: 1.05;
+  }
+  .hebrew {
+    font-family: var(--serif);
+    font-size: clamp(1.2rem, 3vw, 1.7rem);
+    color: var(--violet);
+    letter-spacing: 0.5em;
+  }
+  .etym {
+    font-family: var(--serif);
+    font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+    color: var(--violet);
+    letter-spacing: 0.08em;
+    margin-top: -1.2rem;
+  }
+  .etym em { font-style: italic; }
+  .thesis {
+    max-width: 46ch;
+    line-height: 1.65;
+    color: var(--text);
+    text-wrap: balance;
+  }
+  .thesis em { color: var(--screen); font-style: italic; }
+  nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    align-items: center;
+    margin-top: 0.6rem;
+  }
+  .cta {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--screen);
+    border: 1px solid var(--ash);
+    padding: 0.85rem 1.6rem;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+    min-width: 24ch;
+  }
+  .cta:hover { border-color: var(--violet); color: var(--violet); }
+  .cta:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+  .cta.quiet { border-color: var(--line); color: var(--ash); }
+  .cta.quiet:hover { border-color: var(--violet); color: var(--violet); }
+  footer { margin-top: 1.4rem; }
+</style>
+</head>
+<body>
+<canvas id="field" aria-hidden="true"></canvas>
+
+<p class="mono">a project by Noam Stuart-Levy</p>
+<h1>Qālā</h1>
+<p class="etym"><em>qālā</em> — Aramaic: voice, sound</p>
+<p class="thesis">Sound bends. It curves around corners because its waves are the size of a room, and a layer of warm air will steer it back to the ground. It can deflect a laser beam. Light, absorbed, can make a sound. Both move matter — and on a plate, sound sorts loose grains into a figure you can photograph.</p>
+<p class="thesis" style="margin-top:-0.6rem">This instrument plays that last one, and leaves the rest open.</p>
+
+<nav>
+  <a class="cta" href="plate.html">Play the instrument</a>
+  <a class="cta" href="studio.html">The studio — patch your own · alpha</a>
+  <a class="cta quiet" href="science.html">How it works — Chladni plates &amp; cymatics</a>
+</nav>
+
+<footer>
+  <p class="mono">grew out of a performance in Jerusalem, 2017</p>
+</footer>
+
+<script>
+  // The page is a quiet plate; the pointer is a hand on it.
+  (function () {
+    var c = document.getElementById("field");
+    var x = c.getContext("2d");
+    var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var dpr = Math.min(devicePixelRatio || 1, 1.5);
+    var W = 0, H = 0;
+    var N = 2200;
+    var gx = new Float32Array(N), gy = new Float32Array(N);
+    var vx = new Float32Array(N), vy = new Float32Array(N);
+    for (var i = 0; i < N; i++) { gx[i] = Math.random(); gy[i] = Math.random(); }
+    var mx = -9, my = -9;
+    var M = 4, Nn = 3, PI = Math.PI;
+
+    function resize() {
+      W = innerWidth; H = innerHeight;
+      c.width = W * dpr; c.height = H * dpr;
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    addEventListener("resize", resize); resize();
+    addEventListener("pointermove", function (e) { mx = e.clientX / W; my = e.clientY / H; });
+    document.addEventListener("pointerleave", function () { mx = -9; my = -9; });
+
+    function tick() {
+      x.clearRect(0, 0, W, H);
+      for (var i = 0; i < N; i++) {
+        var px = gx[i], py = gy[i];
+        var smx = Math.sin(M * PI * px), cmx = Math.cos(M * PI * px);
+        var snx = Math.sin(Nn * PI * px), cnx = Math.cos(Nn * PI * px);
+        var smy = Math.sin(M * PI * py), cmy = Math.cos(M * PI * py);
+        var sny = Math.sin(Nn * PI * py), cny = Math.cos(Nn * PI * py);
+        var A = smx * sny + snx * smy;
+        var dAdx = M * PI * cmx * sny + Nn * PI * cnx * smy;
+        var dAdy = Nn * PI * smx * cny + M * PI * snx * cmy;
+        var dx = px - mx, dy = py - my;
+        var hand = Math.exp(-(dx * dx + dy * dy) / 0.012) * 2.5;
+        var aAbs = Math.abs(A) + hand;
+        vx[i] = vx[i] * 0.9 - A * dAdx * 0.00006 + (Math.random() - 0.5) * 0.0011 * aAbs;
+        vy[i] = vy[i] * 0.9 - A * dAdy * 0.00006 + (Math.random() - 0.5) * 0.0011 * aAbs;
+        gx[i] = px + vx[i]; gy[i] = py + vy[i];
+        if (gx[i] < 0) gx[i] += 1; else if (gx[i] > 1) gx[i] -= 1;
+        if (gy[i] < 0) gy[i] += 1; else if (gy[i] > 1) gy[i] -= 1;
+        x.fillStyle = hand > 0.35 ? "rgba(167,143,208,0.55)" : "rgba(138,135,127,0.3)";
+        x.fillRect(gx[i] * W, gy[i] * H, 1.5, 1.5);
+      }
+    }
+
+    if (reduced) { tick(); return; }
+    (function loop() { tick(); requestAnimationFrame(loop); })();
+  })();
+</script>
+</body>
+</html>
