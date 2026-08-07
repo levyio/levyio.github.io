@@ -1,0 +1,2928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+<meta name="referrer" content="no-referrer" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QĀLĀ — the instrument</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --black: #0a0a0c;
+    --stage: #101014;
+    --screen: #e8e6e0;
+    --text: #cfccc4;
+    --ash: #8a877f;
+    --violet: #a78fd0;
+    --violet-deep: #6d549c;
+    --line: #26262c;
+    --serif: "Didot", "Bodoni 72", "Playfair Display", "Georgia", serif;
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1.2rem;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 1.15rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--screen);
+  }
+  header h1 a { color: inherit; text-decoration: none; }
+  .mono {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ash);
+  }
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr minmax(230px, 300px);
+    min-height: 0;
+  }
+  @media (max-width: 720px) {
+    body { overflow: auto; }
+    main { grid-template-columns: 1fr; grid-template-rows: 62vh auto; }
+  }
+  .plate-wrap {
+    position: relative;
+    background: var(--black);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: clamp(0.6rem, 2.5vmin, 2rem);
+  }
+  #plate {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    box-shadow: 0 0 90px rgba(232, 230, 224, 0.10);
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .plate-wrap:fullscreen { padding: 0; background: #000; }
+  .plate-wrap:fullscreen #plate { box-shadow: none; cursor: none; }
+
+  /* floating micro-controls, visible only in fullscreen */
+  #fsPanel {
+    position: absolute;
+    top: 18px; right: 18px;
+    width: 216px;
+    background: rgba(16, 16, 20, 0.86);
+    border: 1px solid var(--line);
+    padding: 0.6rem;
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 5;
+    cursor: auto;
+    transition: opacity 0.5s ease;
+  }
+  .plate-wrap:fullscreen #fsPanel { display: flex; }
+  #fsPanel.faded { opacity: 0; pointer-events: none; }
+  #fsPanel .fs-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    cursor: grab; padding-bottom: 0.2rem; border-bottom: 1px solid var(--line);
+  }
+  #fsPanel .btnrow button { padding: 0.45rem 0.3rem; font-size: 0.6rem; }
+
+  /* genesis: the instrument begins as a single line and is added to, step by step */
+  body.genesis aside { display: none; }
+  body.genesis main { grid-template-columns: 1fr; }
+  #genesis {
+    position: absolute;
+    bottom: 26px; left: 0; right: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    z-index: 6;
+    pointer-events: none;
+  }
+  body.genesis #genesis { display: flex; }
+  #genesis .cap { max-width: 60ch; text-align: center; color: var(--text); }
+  #genesis .row { display: flex; gap: 0.7rem; pointer-events: auto; }
+  #genesis .skip { border-color: var(--line); color: var(--ash); }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+    background: rgba(10, 10, 12, 0.82);
+    text-align: center;
+    padding: 2rem;
+    transition: opacity 0.6s ease;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; }
+  .overlay p {
+    font-family: var(--serif);
+    font-size: clamp(1.15rem, 3vw, 1.6rem);
+    color: var(--screen);
+    max-width: 30ch;
+    line-height: 1.5;
+    text-wrap: balance;
+  }
+  .overlay small { color: var(--ash); font-size: 0.85rem; max-width: 42ch; line-height: 1.5; }
+  button {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: none;
+    color: var(--screen);
+    border: 1px solid var(--ash);
+    padding: 0.7rem 1.4rem;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--violet); color: var(--violet); }
+  button:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+  button.armed { border-color: var(--violet); color: var(--violet); }
+  aside {
+    border-left: 1px solid var(--line);
+    padding: 1.1rem 1.2rem 1.4rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+    background: var(--stage);
+  }
+  @media (max-width: 720px) { aside { border-left: none; border-top: 1px solid var(--line); } }
+  .strip { display: flex; flex-direction: column; gap: 0.45rem; }
+  .strip-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .strip-head .val { color: var(--violet); font-variant-numeric: tabular-nums; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--line);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px; height: 22px;
+    background: var(--screen);
+    cursor: ew-resize;
+    border: none;
+  }
+  input[type="range"]:focus-visible::-webkit-slider-thumb { background: var(--violet); }
+  input[type="range"]::-moz-range-thumb {
+    width: 10px; height: 22px;
+    background: var(--screen);
+    cursor: ew-resize;
+    border: none; border-radius: 0;
+  }
+  input[type="color"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 24px;
+    background: none; border: 1px solid var(--line); padding: 0;
+    cursor: pointer;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+  input[type="color"]::-webkit-color-swatch { border: none; }
+  #harm { display: block; width: 100%; height: 26px; background: #0d0d10; border: 1px solid var(--line); }
+  #anaWin {
+    position: absolute;
+    left: 20px; bottom: 20px;
+    width: 340px;
+    background: rgba(16, 16, 20, 0.92);
+    border: 1px solid var(--line);
+    display: none;
+    flex-direction: column;
+    z-index: 6;
+  }
+  #anaWin.on { display: flex; }
+  #anaWin .ana-head {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--line); cursor: grab;
+  }
+  #anaWin .ana-head button { border: none; padding: 0.15rem 0.35rem; font-size: 0.58rem; }
+  #anaSpec { display: block; width: 100%; height: 190px; background: #08080a; }
+  #anaWin .ana-foot { padding: 0.3rem 0.55rem 0.45rem; display: flex; justify-content: space-between; }
+  .chan { border: 1px solid var(--line); margin-bottom: 0.5rem; }
+  .chan-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem; background: rgba(255,255,255,0.02); }
+  .chan-head .chan-name { flex: none; }
+  .chan-head .chan-read { flex: 1; text-align: right; }
+  .chan-on { padding: 0.25rem 0.55rem; font-size: 0.62rem; }
+  .chan-on.armed { border-color: var(--violet); color: var(--violet); }
+  .chan-solo { color: var(--ash); }
+  .chan-solo.armed { color: var(--violet); border-color: var(--violet); }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.6rem; margin-bottom: 0.2rem;
+  }
+  .panel-head button {
+    font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+    text-transform: uppercase; background: none; color: var(--ash);
+    border: 1px solid var(--line); padding: 0.2rem 0.5rem; cursor: pointer;
+  }
+  .panel-head button.armed { border-color: var(--violet); color: var(--violet); }
+  #micPick {
+    width: 100%; font-family: var(--mono); font-size: 0.6rem;
+    background: var(--black); color: var(--text);
+    border: 1px solid var(--line); padding: 0.25rem; margin-top: 0.15rem;
+  }
+  .chan-fold { border: none; padding: 0 0.25rem; color: var(--ash); }
+  .chan-body { padding: 0.5rem 0.55rem 0.6rem; display: flex; flex-direction: column; gap: 0.45rem; }
+  .chan-body.folded { display: none; }
+  .row2 { display: flex; justify-content: space-between; align-items: baseline; }
+  .btnrow { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .btnrow button { flex: 1; padding: 0.6rem 0.4rem; white-space: nowrap; }
+  .note { font-size: 0.78rem; color: var(--ash); line-height: 1.5; }
+  .note em { color: var(--text); font-style: italic; }
+  hr { border: none; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="index.html">Qālā</a></h1>
+  <span class="mono">an instrument by N.S Levy — <a href="science.html" style="color:inherit;">how it works</a></span>
+</header>
+
+<main>
+  <div class="plate-wrap">
+    <canvas id="plate"></canvas>
+    <div class="overlay" id="overlay">
+      <p>Make a sound, and watch matter take its shape.</p>
+      <small>The plate listens through your microphone — your browser will ask, and you can say no. Nothing is recorded; nothing leaves this page. Sound is limiter-protected.</small>
+      <button id="begin">Begin — let it hear me</button>
+    </div>
+    <div id="genesis">
+      <p class="mono cap" id="gen-cap">speak, sing, clap — the plate is listening to you</p>
+      <div class="row">
+        <button id="gen-add">+ add</button>
+        <button id="gen-skip" class="skip">skip — full desk</button>
+      </div>
+    </div>
+    <div id="anaWin">
+      <div class="ana-head">
+        <span class="mono" style="color:var(--screen)">Analyser</span>
+        <span>
+          <button id="anaMode" class="mono">spectrogram</button>
+          <button id="anaClose" class="mono">✕</button>
+        </span>
+      </div>
+      <canvas id="anaSpec" width="340" height="190"></canvas>
+      <div class="ana-foot"><span class="mono" id="anaSrcLbl">mix</span><span class="mono" id="anaHz">30 Hz – 8 kHz · log</span></div>
+    </div>
+    <div id="fsPanel">
+      <div class="fs-head"><span class="mono" style="color:var(--screen)">Qālā</span><span class="mono">drag · idle hides</span></div>
+      <div class="strip">
+        <div class="strip-head"><span class="mono">Feedback</span><span class="mono val" id="mv-fb">1.02</span></div>
+        <input type="range" id="m-fb" min="0" max="1.08" step="0.005" value="1.02" aria-label="Feedback (fullscreen)" />
+      </div>
+      <div class="strip">
+        <div class="strip-head"><span class="mono">Colour</span><span class="mono val" id="mv-eq">620 Hz</span></div>
+        <input type="range" id="m-eq" min="60" max="4000" step="1" value="620" aria-label="Colour (fullscreen)" />
+      </div>
+      <div class="btnrow">
+        <button id="m-freeze">Freeze</button>
+        <button id="m-rec">Rec ●</button>
+      </div>
+      <div class="btnrow">
+        <button id="m-pal">Palette</button>
+        <button id="m-3d">3D</button>
+        <button id="m-ripple">Print ○</button>
+        <button id="m-exit">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <aside aria-label="No-input mixer">
+    <div class="panel-head">
+      <span class="mono">No-input mixer</span>
+      <button id="loopPower" aria-pressed="false">off</button>
+    </div>
+
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Amount</span><span class="mono val" id="v-amt">1.00</span></div>
+      <input type="range" id="amt" min="0" max="1" step="0.01" value="1" aria-label="How much of the mixer is blended in" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Feedback</span><span class="mono val" id="v-fb">1.02</span></div>
+      <input type="range" id="fb" min="0" max="1.08" step="0.005" value="1.02" aria-label="Feedback amount" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Colour (EQ)</span><span class="mono val" id="v-eq">620 Hz</span></div>
+      <input type="range" id="eq" min="60" max="4000" step="1" value="620" aria-label="Filter frequency" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Time (delay)</span><span class="mono val" id="v-dl">71 ms</span></div>
+      <input type="range" id="dl" min="4" max="400" step="1" value="71" aria-label="Delay time" />
+    </div>
+
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Drive</span><span class="mono val" id="v-drv">1.0</span></div>
+      <input type="range" id="drv" min="1" max="40" step="0.5" value="1" aria-label="Distortion drive" />
+    </div>
+
+    <hr />
+    <span class="mono">Output</span>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Master out</span><span class="mono val" id="v-out">−12 dB</span></div>
+      <input type="range" id="out" min="-48" max="0" step="0.5" value="-12" aria-label="Master output level — everything you hear" />
+    </div>
+
+    <span class="mono">Tone &amp; motion</span>
+
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Bass</span><span class="mono val" id="v-bnd-lo">1.00</span></div>
+      <input type="range" id="bnd-lo" min="0" max="1.5" step="0.01" value="1" aria-label="Low band level" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Mid</span><span class="mono val" id="v-bnd-mid">1.00</span></div>
+      <input type="range" id="bnd-mid" min="0" max="1.5" step="0.01" value="1" aria-label="Mid band level" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Treble</span><span class="mono val" id="v-bnd-hi">1.00</span></div>
+      <input type="range" id="bnd-hi" min="0" max="1.5" step="0.01" value="1" aria-label="High band level" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">LFO rate</span><span class="mono val" id="v-lfor">0.50 Hz</span></div>
+      <input type="range" id="lfor" min="0.05" max="20" step="0.05" value="0.5" aria-label="LFO rate" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">LFO depth</span><span class="mono val" id="v-lfod">0</span></div>
+      <input type="range" id="lfod" min="0" max="800" step="1" value="0" aria-label="LFO depth into the loop's colour" />
+    </div>
+
+    <hr />
+    <span class="mono">Channels</span>
+
+    <div class="chan" data-ch="0">
+      <div class="chan-head">
+        <button class="chan-on" id="toneA">A</button>
+        <span class="mono chan-name">Tone A</span>
+        <span class="mono val chan-read" id="read-0">220 Hz · A3</span>
+        <button class="chan-fold chan-solo" data-solo="0" title="hear only this">S</button><button class="chan-fold" data-fold="0">▾</button>
+      </div>
+      <div class="chan-body" id="body-0">
+        <div class="strip"><div class="row2"><span class="mono">freq</span><span class="mono val" id="v-fqa">220 Hz · A3</span></div>
+          <input type="range" id="fqa" min="40" max="1600" step="1" value="220" aria-label="Tone A frequency" /></div>
+        <div class="strip"><div class="row2"><span class="mono">gain</span><span class="mono val" id="v-g0">0.35</span></div>
+          <input type="range" id="g0" min="0" max="1" step="0.01" value="0.35" aria-label="Tone A gain" /></div>
+        <div class="strip"><div class="row2"><span class="mono">drive</span><span class="mono val" id="v-d0">1.0</span></div>
+          <input type="range" id="d0" min="1" max="30" step="0.5" value="1" aria-label="Tone A drive" /></div>
+        <div class="strip"><div class="row2"><span class="mono">delay</span><span class="mono val" id="v-dl0">0.00</span></div>
+          <input type="range" id="dl0" min="0" max="0.8" step="0.01" value="0" aria-label="Tone A delay" /></div>
+        <div class="strip"><div class="row2"><span class="mono">reverb</span><span class="mono val" id="v-rv0">0.00</span></div>
+          <input type="range" id="rv0" min="0" max="1" step="0.01" value="0" aria-label="Tone A reverb" /></div>
+        <div class="strip"><div class="row2"><span class="mono">into mixer</span><span class="mono val" id="v-s0">0.50</span></div>
+          <input type="range" id="s0" min="0" max="1.5" step="0.01" value="0.5" aria-label="How much of this input reaches the mixer" /></div>
+        <div class="strip"><div class="row2"><span class="mono">ink</span><span class="mono val" id="v-c0">#a78fd0</span></div>
+          <input type="color" id="c0" value="#a78fd0" aria-label="Tone A grain colour" /></div>
+      </div>
+    </div>
+
+    <div class="chan" data-ch="1">
+      <div class="chan-head">
+        <button class="chan-on" id="toneB">B</button>
+        <span class="mono chan-name">Tone B</span>
+        <span class="mono val chan-read" id="read-1">330 Hz · E4</span>
+        <button class="chan-fold chan-solo" data-solo="1" title="hear only this">S</button><button class="chan-fold" data-fold="1">▾</button>
+      </div>
+      <div class="chan-body" id="body-1">
+        <div class="strip"><div class="row2"><span class="mono">freq</span><span class="mono val" id="v-fqb">330 Hz · E4</span></div>
+          <input type="range" id="fqb" min="40" max="1600" step="1" value="330" aria-label="Tone B frequency" /></div>
+        <div class="strip"><div class="row2"><span class="mono">gain</span><span class="mono val" id="v-g1">0.35</span></div>
+          <input type="range" id="g1" min="0" max="1" step="0.01" value="0.35" aria-label="Tone B gain" /></div>
+        <div class="strip"><div class="row2"><span class="mono">drive</span><span class="mono val" id="v-d1">1.0</span></div>
+          <input type="range" id="d1" min="1" max="30" step="0.5" value="1" aria-label="Tone B drive" /></div>
+        <div class="strip"><div class="row2"><span class="mono">delay</span><span class="mono val" id="v-dl1">0.00</span></div>
+          <input type="range" id="dl1" min="0" max="0.8" step="0.01" value="0" aria-label="Tone B delay" /></div>
+        <div class="strip"><div class="row2"><span class="mono">reverb</span><span class="mono val" id="v-rv1">0.00</span></div>
+          <input type="range" id="rv1" min="0" max="1" step="0.01" value="0" aria-label="Tone B reverb" /></div>
+        <div class="strip"><div class="row2"><span class="mono">into mixer</span><span class="mono val" id="v-s1">0.50</span></div>
+          <input type="range" id="s1" min="0" max="1.5" step="0.01" value="0.5" aria-label="How much of this input reaches the mixer" /></div>
+        <div class="strip"><div class="row2"><span class="mono">ink</span><span class="mono val" id="v-c1">#e8e6e0</span></div>
+          <input type="color" id="c1" value="#e8e6e0" aria-label="Tone B grain colour" /></div>
+      </div>
+    </div>
+
+    <div class="chan" data-ch="3">
+      <div class="chan-head">
+        <button class="chan-on" id="srcOn" aria-pressed="false">S</button>
+        <span class="mono chan-name">Source</span>
+        <span class="mono val chan-read" id="read-3">off</span>
+        <button class="chan-fold chan-solo" data-solo="3" title="hear only this">S</button><button class="chan-fold" data-fold="3">▾</button>
+      </div>
+      <div class="chan-body" id="body-3">
+        <div class="strip"><div class="row2"><span class="mono">what</span></div>
+          <select id="srcKind" aria-label="What the source plays">
+            <option value="white">white noise</option>
+            <option value="pink">pink noise</option>
+            <option value="brown">brown noise</option>
+            <option value="file">an audio file…</option>
+          </select></div>
+        <input type="file" id="srcFile" accept="audio/*" hidden />
+        <div class="strip"><div class="row2"><span class="mono">gain</span><span class="mono val" id="v-g3">0.35</span></div>
+          <input type="range" id="g3" min="0" max="1.5" step="0.01" value="0.35" aria-label="Source gain" /></div>
+        <div class="strip"><div class="row2"><span class="mono">drive</span><span class="mono val" id="v-d3">1.0</span></div>
+          <input type="range" id="d3" min="1" max="30" step="0.5" value="1" aria-label="Source drive" /></div>
+        <div class="strip"><div class="row2"><span class="mono">into mixer</span><span class="mono val" id="v-s3">0.50</span></div>
+          <input type="range" id="s3" min="0" max="1.5" step="0.01" value="0.5" aria-label="How much of the source reaches the mixer" /></div>
+        <div class="strip"><div class="row2"><span class="mono">ink</span><span class="mono val" id="v-c3">#8fd0c4</span></div>
+          <input type="color" id="c3" value="#8fd0c4" aria-label="Source grain colour" /></div>
+      </div>
+    </div>
+
+    <div class="chan" data-ch="2">
+      <div class="chan-head">
+        <button class="chan-on" id="mic" aria-pressed="false">M</button>
+        <span class="mono chan-name">Mic</span>
+        <span class="mono val chan-read" id="read-2">off</span>
+        <button class="chan-fold chan-solo" data-solo="2" title="hear only this">S</button><button class="chan-fold" data-fold="2">▾</button>
+      </div>
+      <div class="chan-body" id="body-2">
+        <div class="strip"><div class="row2"><span class="mono">input</span></div>
+          <select id="micPick" aria-label="Which microphone"><option value="">system default input</option></select></div>
+        <div class="strip"><div class="row2"><span class="mono">gain</span><span class="mono val" id="v-g2">0.50</span></div>
+          <input type="range" id="g2" min="0" max="1.5" step="0.01" value="0.5" aria-label="Mic gain" /></div>
+        <div class="strip"><div class="row2"><span class="mono">drive</span><span class="mono val" id="v-d2">1.0</span></div>
+          <input type="range" id="d2" min="1" max="30" step="0.5" value="1" aria-label="Mic drive" /></div>
+        <div class="strip"><div class="row2"><span class="mono">delay</span><span class="mono val" id="v-dl2">0.00</span></div>
+          <input type="range" id="dl2" min="0" max="0.8" step="0.01" value="0" aria-label="Mic delay" /></div>
+        <div class="strip"><div class="row2"><span class="mono">reverb</span><span class="mono val" id="v-rv2">0.00</span></div>
+          <input type="range" id="rv2" min="0" max="1" step="0.01" value="0" aria-label="Mic reverb" /></div>
+        <div class="strip"><div class="row2"><span class="mono">into mixer</span><span class="mono val" id="v-s2">0.50</span></div>
+          <input type="range" id="s2" min="0" max="1.5" step="0.01" value="0.5" aria-label="How much of this input reaches the mixer" /></div>
+        <div class="strip"><div class="row2"><span class="mono">ink</span><span class="mono val" id="v-c2">#8a877f</span></div>
+          <input type="color" id="c2" value="#8a877f" aria-label="Mic grain colour" /></div>
+      </div>
+    </div>
+
+    <div class="strip">
+      <div class="row2"><span class="mono">Together</span><span class="mono val" id="v-note">—</span></div>
+      <canvas id="harm" width="252" height="26" aria-label="harmonic breakdown"></canvas>
+    </div>
+
+    <hr />
+    <span class="mono">The plate</span>
+
+    <div class="btnrow">
+      <button id="material">Plate: steel</button>
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Focus</span><span class="mono val" id="v-focus">0.90</span></div>
+      <input type="range" id="focus" min="0" max="1" step="0.01" value="0.9" aria-label="Grain focus — soft dust to sharp grains" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Balance</span><span class="mono val" id="v-bal">0.00</span></div>
+      <input type="range" id="bal" min="-1" max="1" step="0.01" value="0" aria-label="Balance between the two wave terms" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Shimmer</span><span class="mono val" id="v-walk">0.0006</span></div>
+      <input type="range" id="walk" min="0" max="0.004" step="0.0001" value="0.0006" aria-label="Minimum walk — the grains never fully freeze" />
+    </div>
+
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Grain</span><span class="mono val" id="v-grain">1 px</span></div>
+      <input type="range" id="grain" min="1" max="4" step="1" value="1" aria-label="Grain size" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Ink</span><span class="mono val" id="v-inkc">#e8e6e0</span></div>
+      <input type="color" id="inkc" value="#e8e6e0" aria-label="Ink colour" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Grains</span><span class="mono val" id="v-count">9,000</span></div>
+      <input type="range" id="count" min="2000" max="60000" step="1000" value="20000" aria-label="Number of grains" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Trail</span><span class="mono val" id="v-trail">0.55</span></div>
+      <input type="range" id="trail" min="0" max="1" step="0.01" value="0.55" aria-label="Paint persistence — 1.00 never fades" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Paint</span><span class="mono val" id="v-paint">0.85</span></div>
+      <input type="range" id="paint" min="0.2" max="1" step="0.01" value="0.85" aria-label="Paint strength" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Brush</span><span class="mono val" id="v-brush">1.00</span></div>
+      <input type="range" id="brush" min="0" max="1" step="0.01" value="1" aria-label="Image pickup versus charcoal ink" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Stick</span><span class="mono val" id="v-stick">0.60</span></div>
+      <input type="range" id="stick" min="0" max="1" step="0.01" value="0.6" aria-label="How strongly grains bond to the pixel they picked up" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Hold</span><span class="mono val" id="v-hold">600 ms</span></div>
+      <input type="range" id="hold" min="50" max="4000" step="10" value="600" aria-label="How long a bonded pixel is carried" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Warp</span><span class="mono val" id="v-warp">0.35</span></div>
+      <input type="range" id="warp" min="0" max="1" step="0.01" value="0.35" aria-label="Sound distortion of the image" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Energy</span><span class="mono val" id="v-energy">1.00</span></div>
+      <input type="range" id="energy" min="0.2" max="3" step="0.05" value="1" aria-label="Drive-to-motion gain" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Flow</span><span class="mono val" id="v-flow">0.25</span></div>
+      <input type="range" id="flow" min="0" max="2" step="0.05" value="0.25" aria-label="Pull toward the nodal lines" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Bounce</span><span class="mono val" id="v-bounce">1.00</span></div>
+      <input type="range" id="bounce" min="0" max="2" step="0.05" value="1" aria-label="Beat kick strength" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Corners</span><span class="mono val" id="v-corners">4 · square</span></div>
+      <input type="range" id="corners" min="3" max="33" step="1" value="4" aria-label="Container shape — corners, 33 is a circle" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Modes</span><span class="mono val" id="v-modes">1</span></div>
+      <input type="range" id="nmodes" min="1" max="3" step="1" value="1" aria-label="How many modes may sound at once" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Haze</span><span class="mono val" id="v-haze">0.00</span></div>
+      <input type="range" id="haze" min="0" max="0.6" step="0.01" value="0" aria-label="Video feedback haze" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Plate (its fundamental)</span><span class="mono val" id="v-plate">110 Hz</span></div>
+      <input type="range" id="plate" min="30" max="600" step="1" value="110" aria-label="The plate's own fundamental — a bigger, heavier plate sits lower" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Settle</span><span class="mono val" id="v-settle">600 ms</span></div>
+      <input type="range" id="settle" min="0" max="2500" step="50" value="600" aria-label="How long a figure is held before it may change" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Couple</span><span class="mono val" id="v-couple">0.35</span></div>
+      <input type="range" id="couple" min="0" max="1" step="0.01" value="0.35" aria-label="Do the three plates play alone or interfere" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Morph</span><span class="mono val" id="v-morph">0.9 s</span></div>
+      <input type="range" id="morph" min="0" max="4" step="0.05" value="0.9" aria-label="How long the old figure lingers under the new one" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Beat</span><span class="mono val" id="v-beat">1.00</span></div>
+      <input type="range" id="beat" min="0" max="3" step="0.05" value="1" aria-label="How strongly two tones beat against each other" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Pattern</span><span class="mono val" id="v-pattern">+0</span></div>
+      <input type="range" id="pattern" min="0" max="4" step="1" value="0" aria-label="Pattern fineness" />
+    </div>
+
+    <hr />
+
+    <div class="btnrow">
+      <button id="hand">Hand: draw</button>
+      <button id="handSize">Hand: medium</button>
+    </div>
+    <div class="btnrow">
+      <button id="micDesk" aria-pressed="false">Mic: off</button>
+      <button id="cam" aria-pressed="false">Camera: off</button>
+    </div>
+    <div class="btnrow">
+      <button id="bypass">Loop: in circuit</button>
+    </div>
+    <div class="btnrow">
+      <button id="img">Image: off</button>
+      <button id="palette">Palette: negative</button>
+    </div>
+    <div class="btnrow">
+      <button id="phase">State: solid</button>
+      <button id="imgMode">Image as: grains</button>
+    </div>
+    <div class="btnrow">
+      <button id="slow">Time: 1×</button>
+      <button id="freeze">Freeze</button>
+    </div>
+    <div class="btnrow">
+      <button id="ambient">Ambient mode</button>
+      <button id="second">Second screen</button>
+    </div>
+    <div class="btnrow">
+      <button id="dim">View: 2D plate</button>
+      <button id="scopeSrc">Scope: mix</button>
+    </div>
+    <div class="btnrow">
+      <button id="ana">Analyser: off</button>
+    </div>
+    <div class="btnrow">
+      <button id="parm">Capture for print ○</button>
+      <button id="export">Save the print ↓</button>
+    </div>
+    <div class="btnrow">
+      <button id="psize">12″ × 12″ print</button>
+      <button id="pink">Ink: as shown</button>
+    </div>
+    <div class="btnrow">
+      <button id="pseam">Seamless: off</button>
+    </div>
+    <div class="btnrow">
+      <button id="record">Record 15″ ●</button>
+    </div>
+    <input type="file" id="imgfile" accept="image/*" hidden />
+
+    <p class="note"><em>Qālā.</em> The mixer is fed back on itself — the sound is the electricity of this circuit, nothing else. The mic puts your room inside the loop; the camera or an image puts a picture into the fusion, repainted by the grains and torn by the sound. <em>Capture for print</em> opens a 300&nbsp;dpi canvas and draws your whole take into it as one long exposure; <em>Save the print</em> writes the file, with the patch that made it stored inside.</p>
+    <p class="note mono" id="status">silent</p>
+  </aside>
+</main>
+
+<script type="module">
+/* ============================================================
+   A PROCESS — the plate + no-input mixer
+   All client-side. No dependencies. Limiter always on.
+   ============================================================ */
+
+window.addEventListener("error", (e) => { window.__err = `${e.message} @ ${e.lineno}`; });
+const $ = (id) => document.getElementById(id);
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- audio: the no-input mixer ---------- */
+let AC = null, nodes = null, analyser = null, micStream = null, micNode = null;
+let micGainNode = null, micLevel = 0.5;
+let oscA = null, oscAGain = null, oscB = null, oscBGain = null;
+let toneAHz = 220, toneBHz = 330;
+
+const CH = [];                      // three channels: tone A, tone B, the room
+let chanOf = null;                  // which channel each grain belongs to
+
+function impulseBuf(sec) {
+  const len = Math.max(1, Math.floor(AC.sampleRate * sec));
+  const b = AC.createBuffer(2, len, AC.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = b.getChannelData(ch);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5);
+  }
+  return b;
+}
+
+/* a channel: source → gain → drive → (dry + delay + reverb) → out.
+   Each keeps its own analyser, so the plate can tell the channels apart. */
+function makeChannel(colourHex) {
+  const inG = AC.createGain(); inG.gain.value = 0.35;
+  const sh = AC.createWaveShaper(); sh.oversample = "2x";
+  const dl = AC.createDelay(1); dl.delayTime.value = 0.26;
+  const dlFb = AC.createGain(); dlFb.gain.value = 0.35;
+  const dlWet = AC.createGain(); dlWet.gain.value = 0;
+  const rv = AC.createConvolver(); rv.buffer = impulseBuf(1.9);
+  const rvWet = AC.createGain(); rvWet.gain.value = 0;
+  const out = AC.createGain();
+  const send = AC.createGain(); send.gain.value = 0.5;  // this input's own way in
+  inG.connect(sh);
+  sh.connect(out);
+  sh.connect(dl); dl.connect(dlFb); dlFb.connect(dl); dl.connect(dlWet); dlWet.connect(out);
+  sh.connect(rv); rv.connect(rvWet); rvWet.connect(out);
+  const tap = AC.createAnalyser(); tap.fftSize = 2048; tap.smoothingTimeConstant = 0.5;
+  out.connect(tap);
+  out.connect(send);
+  return { inG, sh, dl, dlWet, rvWet, out, send, tap,
+           colour: hexToRgb(colourHex), pitch: 0, m: 3, n: 2, energy: 0, active: false };
+}
+function setChanDrive(ch, v) {
+  if (v <= 1.05) { ch.sh.curve = null; return; }
+  const c = new Float32Array(1024), norm = Math.tanh(v * 0.35);
+  for (let i = 0; i < 1024; i++) { const x = (i / 511.5) - 1; c[i] = Math.tanh(v * 0.35 * x) / norm; }
+  ch.sh.curve = c;
+}
+
+function buildMixer() {
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+
+  CH.length = 0;
+  CH.push(makeChannel($("c0").value), makeChannel($("c1").value),
+          makeChannel($("c2").value), makeChannel($("c3").value));
+  CH[0].name = "tone A"; CH[1].name = "tone B"; CH[2].name = "the mic"; CH[3].name = "the source";
+  applySolo();
+  chanOf = new Uint8Array(MAXG);
+  for (let i = 0; i < MAXG; i++) chanOf[i] = i % 4;
+
+  const chanSum = AC.createGain();          // the three channels, summed
+  CH.forEach((c) => c.out.connect(chanSum));
+
+  // ---- the no-input mixer: a manipulator BESIDE the channels, not in front ----
+  const loopIn = AC.createGain();
+  const eq = AC.createBiquadFilter(); eq.type = "bandpass"; eq.frequency.value = 620; eq.Q.value = 2.2;
+  const shaper = AC.createWaveShaper();
+  const curve = new Float32Array(1024);
+  for (let i = 0; i < 1024; i++) curve[i] = Math.tanh(2.2 * ((i / 511.5) - 1));
+  shaper.curve = curve;
+  const delay = AC.createDelay(1); delay.delayTime.value = 0.071;
+  const fbGain = AC.createGain(); fbGain.gain.value = bypassed ? 0 : 1.02;
+  const loopAmt = AC.createGain(); loopAmt.gain.value = bypassed ? 0 : 1;
+  // its own seed, so it can breed from nothing even with no channel playing
+  const nb = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+  const nd = nb.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * 0.01;
+  const seedGain = AC.createGain(); seedGain.gain.value = bypassed ? 0 : 1;
+  const seed = AC.createBufferSource(); seed.buffer = nb; seed.loop = true;
+  seed.connect(seedGain).connect(loopIn); seed.start();
+
+  // The desk sits after the inputs: mic, tone A, tone B and the source each
+  // reach it through their own send, so the mixer is mixing between four
+  // things rather than swallowing one lump sum.
+  CH.forEach((c) => c.send.connect(loopIn));
+  loopIn.connect(eq); eq.connect(shaper); shaper.connect(delay);
+  delay.connect(fbGain); fbGain.connect(loopIn);  // its internal feedback
+  delay.connect(loopAmt);
+
+  // ---- the output bus: channels ALWAYS heard, mixer blended on top ----
+  const preBands = AC.createGain();
+  chanSum.connect(preBands);                      // dry — this is what was missing
+  loopAmt.connect(preBands);
+
+  const loF = AC.createBiquadFilter(); loF.type = "lowpass"; loF.frequency.value = 250;
+  const midF = AC.createBiquadFilter(); midF.type = "bandpass"; midF.frequency.value = 900; midF.Q.value = 0.7;
+  const hiF = AC.createBiquadFilter(); hiF.type = "highpass"; hiF.frequency.value = 2000;
+  const loG = AC.createGain(), midG = AC.createGain(), hiG = AC.createGain();
+  const bandSum = AC.createGain();
+  preBands.connect(loF); loF.connect(loG); loG.connect(bandSum);
+  preBands.connect(midF); midF.connect(midG); midG.connect(bandSum);
+  preBands.connect(hiF); hiF.connect(hiG); hiG.connect(bandSum);
+
+  const driveSh = AC.createWaveShaper(); driveSh.oversample = "2x";
+  const fader = AC.createGain(); fader.gain.value = dbToLin(-12);
+  const limiter = AC.createDynamicsCompressor();
+  limiter.threshold.value = -6; limiter.knee.value = 0; limiter.ratio.value = 20;
+  limiter.attack.value = 0.002; limiter.release.value = 0.25;
+  const master = AC.createGain(); master.gain.value = 0.9;
+  analyser = AC.createAnalyser(); analyser.fftSize = 8192; analyser.smoothingTimeConstant = 0.82;
+
+  const lfo = AC.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 0.5;
+  const lfoG = AC.createGain(); lfoG.gain.value = 0;
+  lfo.connect(lfoG); lfoG.connect(eq.frequency); lfo.start();
+
+  bandSum.connect(driveSh); driveSh.connect(fader);
+  fader.connect(limiter).connect(master).connect(AC.destination);
+  limiter.connect(analyser);
+
+  nodes = { input: chanSum, chanSum, loopIn, loopAmt, seedGain, eq, shaper, delay, fbGain,
+            fader, limiter, master, loG, midG, hiG, driveSh, lfo, lfoG };
+
+  scopeTaps.mix = analyser;
+  scopeTaps.toneA = CH[0].tap;
+  scopeTaps.toneB = CH[1].tap;
+  scopeTaps.mic = CH[2].tap;
+  delay.connect(tapFor("loop"));
+
+  // apply whatever the desk already says
+  for (let i = 0; i < CH.length; i++) {
+    CH[i].inG.gain.value = +$("g" + i).value;
+    setChanDrive(CH[i], +$("d" + i).value);
+    if ($("dl" + i)) CH[i].dlWet.gain.value = +$("dl" + i).value;   // the source has no delay/reverb strip
+    if ($("rv" + i)) CH[i].rvWet.gain.value = +$("rv" + i).value;
+    CH[i].colour = hexToRgb($("c" + i).value);
+    CH[i].send.gain.value = +$("s" + i).value;
+  }
+  scopeTaps.source = CH[3].tap;
+  setBypass(bypassed);
+}
+
+const dbToLin = (db) => Math.pow(10, db / 20);
+
+/* controls */
+const bindings = [
+  ["fb", "v-fb", (v) => { nodes.fbGain.gain.setTargetAtTime(+v, AC.currentTime, 0.05); return (+v).toFixed(2); }],
+  ["eq", "v-eq", (v) => { eqBase = +v; nodes.eq.frequency.setTargetAtTime(+v, AC.currentTime, 0.05); return `${Math.round(v)} Hz`; }],
+  ["dl", "v-dl", (v) => { nodes.delay.delayTime.setTargetAtTime(v / 1000, AC.currentTime, 0.05); return `${Math.round(v)} ms`; }],
+  ["amt", "v-amt", (v) => { if (!bypassed) nodes.loopAmt.gain.setTargetAtTime(+v, AC.currentTime, 0.05); return (+v).toFixed(2); }],
+  ["out", "v-out", (v) => { nodes.fader.gain.setTargetAtTime(dbToLin(+v), AC.currentTime, 0.05); return `${(+v).toFixed(1).replace("-", "−")} dB`; }],
+  ["drv", "v-drv", (v) => { setDrive(+v); return (+v).toFixed(1); }],
+  ["bnd-lo", "v-bnd-lo", (v) => { nodes.loG.gain.setTargetAtTime(+v, AC.currentTime, 0.05); return (+v).toFixed(2); }],
+  ["bnd-mid", "v-bnd-mid", (v) => { nodes.midG.gain.setTargetAtTime(+v, AC.currentTime, 0.05); return (+v).toFixed(2); }],
+  ["bnd-hi", "v-bnd-hi", (v) => { nodes.hiG.gain.setTargetAtTime(+v, AC.currentTime, 0.05); return (+v).toFixed(2); }],
+  ["lfor", "v-lfor", (v) => { nodes.lfo.frequency.setTargetAtTime(+v, AC.currentTime, 0.05); return `${(+v).toFixed(2)} Hz`; }],
+  ["lfod", "v-lfod", (v) => { nodes.lfoG.gain.setTargetAtTime(+v, AC.currentTime, 0.05); return `${Math.round(v)}`; }],
+];
+function setDrive(v) {
+  if (!nodes) return;
+  if (v <= 1.05) { nodes.driveSh.curve = null; return; }
+  const c = new Float32Array(1024);
+  const norm = Math.tanh(v * 0.35);
+  for (let i = 0; i < 1024; i++) { const x = (i / 511.5) - 1; c[i] = Math.tanh(v * 0.35 * x) / norm; }
+  nodes.driveSh.curve = c;
+}
+for (const [slider, label, apply] of bindings) {
+  $(slider).addEventListener("input", (e) => {
+    if (!AC) return;
+    $(label).textContent = apply(e.target.value);
+  });
+}
+
+function mediaAvailable() {
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) return true;
+  $("status").textContent =
+    "mic/camera need a secure connection — open via localhost or https (they will work on the real domain)";
+  return false;
+}
+
+/* Ask for the untouched signal — but never let that wish be the reason the mic
+   fails. Bluetooth headsets run a 16 kHz hands-free profile and will refuse to
+   hand over their own processing, so fall back rather than give up. */
+async function openMicStream(deviceId) {
+  const dev = deviceId ? { deviceId: { exact: deviceId } } : {};
+  const tries = [
+    { audio: { ...dev, echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
+    { audio: { ...dev } },
+    { audio: true },
+  ];
+  let last = null;
+  for (const c of tries) {
+    try { return await navigator.mediaDevices.getUserMedia(c); }
+    catch (e) {
+      last = e;
+      // being refused permission is final; the rest are worth another go
+      if (e.name === "NotAllowedError" || e.name === "SecurityError") break;
+    }
+  }
+  throw last;
+}
+function micTrouble(err) {
+  switch (err && err.name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return "the microphone was blocked — allow it for this page, and check System Settings › Privacy & Security › Microphone";
+    case "NotFoundError":     return "no microphone found on this machine";
+    case "NotReadableError":  return "the microphone is busy — another app is holding it";
+    case "OverconstrainedError": return "that microphone refused every setting offered";
+    default: return `the microphone did not open — ${(err && err.name) || "unknown"}`;
+  }
+}
+function micUI(on) {
+  $("mic").classList.toggle("armed", on);
+  $("mic").setAttribute("aria-pressed", String(on));
+  const d = $("micDesk");
+  if (d) {
+    d.textContent = `Mic: ${on ? "listening" : "off"}`;
+    d.classList.toggle("armed", on);
+    d.setAttribute("aria-pressed", String(on));
+  }
+}
+
+async function toggleMic() {
+  if (!AC) { $("status").textContent = "begin the process first"; return; }
+  await wakeAudio();
+  if (micStream) {
+    micNode.disconnect(); micStream.getTracks().forEach((t) => t.stop());
+    micStream = null; micNode = null;
+    CH[2].active = false;
+    micUI(false); $("read-2").textContent = "off";
+    return;
+  }
+  if (!mediaAvailable()) {
+    if (genesisStage >= 0) $("gen-cap").textContent = "this page needs https for a microphone — press A for a tone instead";
+    return;
+  }
+  $("status").textContent = "asking for the microphone…";
+  try {
+    micStream = await openMicStream(micDeviceId);
+    micNode = AC.createMediaStreamSource(micStream);
+    micNode.connect(CH[2].inG);
+    CH[2].active = true;
+    micUI(true); $("read-2").textContent = "live";
+    const tr = micStream.getAudioTracks()[0];
+    const rate = tr.getSettings ? tr.getSettings().sampleRate : null;
+    $("status").textContent = `listening through ${tr.label || "the microphone"}`
+      + (rate && rate <= 16000 ? " · 16 kHz headset profile — telephone quality" : "");
+    listMics();                                   // labels only exist once granted
+  } catch (err) {
+    $("status").textContent = micTrouble(err);
+    if (genesisStage >= 0) $("gen-cap").textContent = "no microphone — press A and the instrument will sound its own tone";
+  }
+}
+const HANDS = [["shake", 0], ["draw", 1], ["sweep", 2]];
+const HAND_SIZES = [["small", 0.03], ["medium", 0.055], ["wide", 0.1]];
+let handIdx = 1, handSizeIdx = 1;
+$("hand").addEventListener("click", () => {
+  handIdx = (handIdx + 1) % HANDS.length;
+  brushMode = HANDS[handIdx][1];
+  $("hand").textContent = `Hand: ${HANDS[handIdx][0]}`;
+  $("hand").classList.toggle("armed", brushMode !== 0);
+  $("status").textContent = brushMode === 0
+    ? "the hand shakes the plate where you press"
+    : brushMode === 1 ? "the hand lays charcoal — drag to draw"
+    : "the hand sweeps what is already there";
+});
+$("handSize").addEventListener("click", () => {
+  handSizeIdx = (handSizeIdx + 1) % HAND_SIZES.length;
+  brushR = HAND_SIZES[handSizeIdx][1];
+  $("handSize").textContent = `Hand: ${HAND_SIZES[handSizeIdx][0]}`;
+});
+
+/* An AudioContext that is merely quiet still holds the output device open, and
+   a Bluetooth headset with an open-but-idle link hisses. So when truly nothing
+   is sounding, let the context go — macOS releases the device and the headphones
+   fall silent. Any switch wakes it again. */
+function anythingSounding() { return !!oscA || !!oscB || !!micStream || !!srcNode || !bypassed; }
+async function wakeAudio() {
+  if (AC && AC.state === "suspended") { try { await AC.resume(); } catch {} }
+  idleSince = 0;
+}
+let idleSince = 0;
+setInterval(() => {
+  if (!AC) return;
+  if (anythingSounding()) { idleSince = 0; return; }
+  if (!idleSince) { idleSince = performance.now(); return; }
+  if (performance.now() - idleSince > 1800 && AC.state === "running")
+    AC.suspend().catch(() => {});
+}, 500);
+
+/* The source channel: noise, or a file you hand it. White is flat, pink falls
+   3 dB an octave, brown 6 — and the plate answers each of them differently,
+   because the figure follows where the energy actually sits. */
+let srcNode = null, srcBuf = null;
+function noiseBuffer(kind) {
+  const n = AC.sampleRate * 4;
+  const b = AC.createBuffer(1, n, AC.sampleRate);
+  const d = b.getChannelData(0);
+  if (kind === "white") { for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
+  else if (kind === "brown") {
+    let last = 0;
+    for (let i = 0; i < n; i++) { const w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+  } else {                                            // pink — Voss-McCartney
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < n; i++) {
+      const w = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759;
+      b2 = 0.96900 * b2 + w * 0.1538520; b3 = 0.86650 * b3 + w * 0.3104856;
+      b4 = 0.55000 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.0168980;
+      d[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+      b6 = w * 0.115926;
+    }
+  }
+  return b;
+}
+function stopSource() {
+  if (srcNode) { try { srcNode.stop(); } catch {} srcNode.disconnect(); srcNode = null; }
+  CH[3].active = false;
+  $("srcOn").classList.remove("armed"); $("srcOn").setAttribute("aria-pressed", "false");
+  $("read-3").textContent = "off";
+}
+async function startSource() {
+  await wakeAudio();
+  const kind = $("srcKind").value;
+  if (kind === "file" && !srcBuf) { $("srcFile").click(); return; }
+  srcNode = AC.createBufferSource();
+  srcNode.buffer = kind === "file" ? srcBuf : noiseBuffer(kind);
+  srcNode.loop = true;
+  srcNode.connect(CH[3].inG);
+  srcNode.start();
+  CH[3].active = true;
+  $("srcOn").classList.add("armed"); $("srcOn").setAttribute("aria-pressed", "true");
+  $("read-3").textContent = kind === "file" ? "file" : `${kind} noise`;
+}
+$("srcOn").addEventListener("click", () => {
+  if (!AC) { $("status").textContent = "begin the process first"; return; }
+  srcNode ? stopSource() : startSource();
+});
+$("srcKind").addEventListener("change", () => {
+  if ($("srcKind").value === "file") { srcBuf = null; $("srcFile").click(); return; }
+  if (srcNode) { stopSource(); startSource(); }
+});
+$("srcFile").addEventListener("change", async (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f || !AC) return;
+  $("status").textContent = `reading ${f.name}…`;
+  try {
+    srcBuf = await AC.decodeAudioData(await f.arrayBuffer());
+    $("srcKind").value = "file";
+    if (srcNode) stopSource();
+    startSource();
+    $("status").textContent = `${f.name} — ${srcBuf.duration.toFixed(1)}s, looping into the plate`;
+  } catch (err) {
+    $("status").textContent = `could not read that audio file (${err.name || "unknown"})`;
+  }
+});
+
+$("mic").addEventListener("click", toggleMic);
+if ($("micDesk")) $("micDesk").addEventListener("click", toggleMic);
+
+/* which ear the instrument listens through */
+let micDeviceId = null;
+async function listMics() {
+  const sel = $("micPick");
+  if (!sel || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  const ins = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput");
+  sel.innerHTML = "";
+  const dflt = document.createElement("option");
+  dflt.value = ""; dflt.textContent = "system default input";
+  sel.appendChild(dflt);
+  ins.forEach((d, i) => {
+    const o = document.createElement("option");
+    o.value = d.deviceId;
+    o.textContent = d.label || `input ${i + 1}`;
+    sel.appendChild(o);
+  });
+  sel.value = micDeviceId || "";
+}
+if ($("micPick")) {
+  $("micPick").addEventListener("change", async (e) => {
+    micDeviceId = e.target.value || null;
+    if (micStream) { await toggleMic(); await toggleMic(); }   // reopen on the new ear
+  });
+  listMics();
+}
+
+/* camera — the video artist's station: your image enters the fusion */
+let camStream = null, camVideo = null;
+$("cam").addEventListener("click", async () => {
+  if (camStream) {
+    camStream.getTracks().forEach((t) => t.stop());
+    camStream = null; camVideo = null;
+    $("cam").textContent = "Camera: off"; $("cam").classList.remove("armed");
+    $("cam").setAttribute("aria-pressed", "false");
+    return;
+  }
+  if (!mediaAvailable()) return;
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+    camVideo = document.createElement("video");
+    camVideo.srcObject = camStream;
+    camVideo.muted = true; camVideo.playsInline = true;
+    await camVideo.play();
+    if (userImage) { userImage = null; $("img").textContent = "Image: off"; $("img").classList.remove("armed"); }
+    $("cam").textContent = "Camera: in the loop"; $("cam").classList.add("armed");
+    $("cam").setAttribute("aria-pressed", "true");
+  } catch (err) {
+    $("status").textContent = (err && (err.name === "NotFoundError" || err.name === "OverconstrainedError"))
+      ? "no camera found on this machine — plug one in, or use Image with a picture instead"
+      : "camera permission declined — the loop continues without your image";
+  }
+});
+
+/* a still image as the visual source — the grains and the sound distort it */
+$("img").addEventListener("click", () => {
+  if (userImage) {
+    userImage = null;
+    $("img").textContent = "Image: off"; $("img").classList.remove("armed");
+    return;
+  }
+  $("imgfile").click();
+});
+$("imgfile").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const im = new Image();
+  im.onload = () => {
+    userImage = im;
+    if (camStream) $("cam").click(); // one visual source at a time
+    $("img").textContent = "Image: in the loop"; $("img").classList.add("armed");
+  };
+  im.src = URL.createObjectURL(f);
+  e.target.value = "";
+});
+/* dev hook: physics probe (used by automated checks) */
+window.__probe = () => {
+  let sumA = 0, sumV = 0;
+  const nProbe = Math.min(2000, activeCount);
+  for (let i = 0; i < nProbe; i++) {
+    sumA += Math.abs(fieldA(px[i], py[i]));
+    sumV += Math.hypot(vx[i], vy[i]);
+  }
+  return { modes: modes.map((md) => `${md.m},${md.n}@${md.w.toFixed(2)}`).join(" "), drive: +drive.toFixed(3), kick: +kick.toFixed(3), meanA: +(sumA / nProbe).toFixed(3), meanV: +(sumV / nProbe).toExponential(2) };
+};
+/* dev hook: load a source image programmatically (used by automated checks) */
+window.__setTestImage = (url) => {
+  const im = new Image();
+  im.onload = () => { userImage = im; $("img").textContent = "Image: in the loop"; $("img").classList.add("armed"); };
+  im.src = url;
+};
+
+/* palette — a lighting state, cycled */
+$("palette").addEventListener("click", () => {
+  const i = (PALETTE_ORDER.indexOf(paletteName) + 1) % PALETTE_ORDER.length;
+  paletteName = PALETTE_ORDER[i];
+  palette = PALETTES[paletteName];
+  grainRGB = hexToRgb(palette.grain);
+  $("palette").textContent = `Palette: ${paletteName}`;
+  $("inkc").value = palette.grain;
+  $("v-inkc").textContent = palette.grain;
+});
+
+/* ink — the colour circle: paint with any colour, on demand */
+$("inkc").addEventListener("input", (e) => {
+  grainRGB = hexToRgb(e.target.value);
+  $("v-inkc").textContent = e.target.value;
+});
+
+/* the plate's parameter bank — live, no audio context required */
+const plateBars = [
+  ["grain", "v-grain", (v) => { grainSize = +v; return `${v} px`; }],
+  ["count", "v-count", (v) => { activeCount = +v; return (+v).toLocaleString(); }],
+  ["brush", "v-brush", (v) => { brush = +v; return (+v).toFixed(2); }],
+  ["stick", "v-stick", (v) => { stick = +v; return (+v).toFixed(2); }],
+  ["hold", "v-hold", (v) => { hold = +v; return `${v} ms`; }],
+  ["trail", "v-trail", (v) => { trail = +v; return (+v).toFixed(2); }],
+  ["paint", "v-paint", (v) => { paintAlpha = +v; return (+v).toFixed(2); }],
+  ["warp", "v-warp", (v) => { warp = +v; return (+v).toFixed(2); }],
+  ["energy", "v-energy", (v) => { energyGain = +v; return (+v).toFixed(2); }],
+  ["flow", "v-flow", (v) => { flow = +v; return (+v).toFixed(2); }],
+  ["bounce", "v-bounce", (v) => { bounce = +v; return (+v).toFixed(2); }],
+  ["pattern", "v-pattern", (v) => { patternAdd = +v; return `+${v}`; }],
+  ["focus", "v-focus", (v) => { focus = +v; return (+v).toFixed(2); }],
+  ["bal", "v-bal", (v) => { balance = +v; return (+v).toFixed(2); }],
+  ["walk", "v-walk", (v) => { minWalk = +v; return (+v).toFixed(4); }],
+  ["nmodes", "v-modes", (v) => { maxModes = +v; return `${v}`; }],
+  ["haze", "v-haze", (v) => { haze = +v; return (+v).toFixed(2); }],
+  ["plate", "v-plate", (v) => { plateHz = +v; return `${Math.round(v)} Hz`; }],
+  ["settle", "v-settle", (v) => { settleMs = +v; return `${v} ms`; }],
+  ["morph", "v-morph", (v) => { morphSec = +v; return `${(+v).toFixed(2)} s`; }],
+  ["couple", "v-couple", (v) => { couple = +v; return (+v).toFixed(2); }],
+  ["beat", "v-beat", (v) => { beatAmt = +v; return (+v).toFixed(2); }],
+  ["corners", "v-corners", (v) => {
+    corners = +v;
+    const names = { 3: "triangle", 4: "square", 5: "pentagon", 6: "hexagon", 8: "octagon" };
+    return corners >= 33 ? "∞ · circle" : `${corners}${names[corners] ? " · " + names[corners] : ""}`;
+  }],
+];
+
+/* the plate's material — cycled */
+$("material").addEventListener("click", () => {
+  const i = (MATERIAL_ORDER.indexOf(materialName) + 1) % MATERIAL_ORDER.length;
+  materialName = MATERIAL_ORDER[i];
+  material = MATERIALS[materialName];
+  $("material").textContent = `Plate: ${materialName}`;
+});
+for (const [slider, label, apply] of plateBars) {
+  $(slider).addEventListener("input", (e) => { $(label).textContent = apply(e.target.value); });
+}
+
+/* time — the plate in slow motion */
+const TIME_STEPS = [[1, "1×"], [0.5, "½×"], [0.25, "¼×"]];
+let timeIdx = 0;
+$("slow").addEventListener("click", () => {
+  timeIdx = (timeIdx + 1) % TIME_STEPS.length;
+  timeScale = TIME_STEPS[timeIdx][0];
+  $("slow").textContent = `Time: ${TIME_STEPS[timeIdx][1]}`;
+  $("slow").classList.toggle("armed", timeScale !== 1);
+});
+
+/* ambient — the piece takes the whole screen; Esc returns */
+$("ambient").addEventListener("click", () => {
+  const wrap = canvas.parentElement;
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (wrap.requestFullscreen) wrap.requestFullscreen();
+});
+document.addEventListener("fullscreenchange", () => setTimeout(resize, 100));
+
+/* ---------- floating micro-controls in fullscreen ---------- */
+const fsPanel = $("fsPanel");
+function proxySlider(miniId, miniLbl, mainId) {
+  $(miniId).addEventListener("input", (e) => {
+    const main = $(mainId);
+    main.value = e.target.value;
+    main.dispatchEvent(new Event("input"));
+    $(miniLbl).textContent = $("v-" + mainId).textContent;
+  });
+}
+proxySlider("m-fb", "mv-fb", "fb");
+proxySlider("m-eq", "mv-eq", "eq");
+$("m-freeze").addEventListener("click", () => $("freeze").click());
+$("m-rec").addEventListener("click", () => $("record").click());
+$("m-pal").addEventListener("click", () => $("palette").click());
+$("m-ripple").addEventListener("click", () => (pBuf ? $("export") : $("parm")).click());
+$("m-exit").addEventListener("click", () => { if (document.fullscreenElement) document.exitFullscreen(); });
+// keep the mini labels honest
+setInterval(() => {
+  $("m-freeze").textContent = $("freeze").textContent;
+  $("m-rec").textContent = $("record").textContent.replace("Record 15″ ●", "Rec ●");
+}, 500);
+// entering fullscreen: sync minis to the desk
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) return;
+  $("m-fb").value = $("fb").value; $("mv-fb").textContent = $("v-fb").textContent;
+  $("m-eq").value = $("eq").value; $("mv-eq").textContent = $("v-eq").textContent;
+  fsPanel.classList.remove("faded");
+});
+// idle hides the panel; any movement brings it back
+let fsIdle = null;
+document.addEventListener("pointermove", () => {
+  if (!document.fullscreenElement) return;
+  fsPanel.classList.remove("faded");
+  clearTimeout(fsIdle);
+  fsIdle = setTimeout(() => fsPanel.classList.add("faded"), 3000);
+});
+// drag the panel by its head
+fsPanel.querySelector(".fs-head").addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  const r = fsPanel.getBoundingClientRect();
+  fsPanel.style.left = r.left + "px"; fsPanel.style.top = r.top + "px"; fsPanel.style.right = "auto";
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  const move = (ev) => { fsPanel.style.left = (ev.clientX - sx) + "px"; fsPanel.style.top = (ev.clientY - sy) + "px"; };
+  const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); };
+  document.addEventListener("pointermove", move);
+  document.addEventListener("pointerup", up);
+});
+
+/* ---------- second screen: the output on a projector, the desk stays here ---------- */
+let outWin = null;
+$("second").addEventListener("click", () => {
+  if (outWin && !outWin.closed) {
+    outWin.close(); outWin = null;
+    $("second").textContent = "Second screen"; $("second").classList.remove("armed");
+    return;
+  }
+  outWin = window.open("", "advaout", "width=960,height=560");
+  if (!outWin) {
+    $("status").textContent = "popup blocked — allow popups for this site, then try again";
+    return;
+  }
+  const d = outWin.document;
+  d.title = "QĀLĀ — output";
+  d.body.style.cssText = "margin:0;background:#000;display:grid;place-items:center;height:100vh;overflow:hidden";
+  const v = d.createElement("video");
+  v.muted = true; v.playsInline = true; v.autoplay = true;
+  v.style.cssText = "width:100vw;height:100vh;object-fit:contain";
+  v.srcObject = canvas.captureStream(30);
+  d.body.appendChild(v);
+  v.play().catch(() => {});
+  d.addEventListener("dblclick", () => {
+    if (d.fullscreenElement) d.exitFullscreen();
+    else d.documentElement.requestFullscreen();
+  });
+  const hint = d.createElement("div");
+  hint.textContent = "drag this window to the projector · double-click for fullscreen";
+  hint.style.cssText = "position:fixed;bottom:12px;left:0;right:0;text-align:center;color:#8a877f;font:10px ui-monospace,monospace;letter-spacing:2px;text-transform:uppercase";
+  d.body.appendChild(hint);
+  setTimeout(() => { try { hint.remove(); } catch {} }, 9000);
+  $("second").textContent = "Second screen: live"; $("second").classList.add("armed");
+  const watch = setInterval(() => {
+    if (!outWin || outWin.closed) {
+      clearInterval(watch);
+      $("second").textContent = "Second screen"; $("second").classList.remove("armed");
+      outWin = null;
+    }
+  }, 800);
+});
+
+/* record — a clip of the loop, image and sound together */
+let recorder = null;
+$("record").addEventListener("click", () => {
+  if (!("MediaRecorder" in window) || !canvas.captureStream) {
+    $("status").textContent = "recording not supported in this browser";
+    return;
+  }
+  if (recorder) { if (recorder.state !== "inactive") recorder.stop(); return; }
+  const stream = canvas.captureStream(30);
+  let dest = null;
+  if (AC && nodes) {
+    dest = AC.createMediaStreamDestination();
+    nodes.limiter.connect(dest);
+    dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
+  }
+  const mime = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"]
+    .find((m) => MediaRecorder.isTypeSupported(m)) || "";
+  recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  const chunks = [];
+  recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  recorder.onstop = () => {
+    if (dest) { try { nodes.limiter.disconnect(dest); } catch {} }
+    const type = recorder.mimeType || "video/webm";
+    const ext = type.includes("mp4") ? "mp4" : "webm";
+    const blob = new Blob(chunks, { type });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `a-process-clip-${Date.now()}.${ext}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    recorder = null;
+    $("record").textContent = "Record 15″ ●";
+    $("record").classList.remove("armed");
+  };
+  recorder.start();
+  $("record").classList.add("armed");
+  let left = 15;
+  $("record").textContent = `Recording ${left}″ — click to stop`;
+  const tick = setInterval(() => {
+    if (!recorder) { clearInterval(tick); return; }
+    left -= 1;
+    if (left <= 0) { clearInterval(tick); if (recorder.state !== "inactive") recorder.stop(); }
+    else $("record").textContent = `Recording ${left}″ — click to stop`;
+  }, 1000);
+});
+
+/* ---------- the plate: charcoal on standing waves ---------- */
+const canvas = $("plate");
+const ctx = canvas.getContext("2d", { alpha: false });
+const fbCanvas = document.createElement("canvas");   // previous frame, for bounded video-feedback
+const fbCtx = fbCanvas.getContext("2d", { alpha: false });
+let W = 0, H = 0, dpr = 1;
+
+const MAXG = 60000;
+const px = new Float32Array(MAXG), py = new Float32Array(MAXG);
+const vx = new Float32Array(MAXG), vy = new Float32Array(MAXG);
+let activeCount = Math.min(40000, Math.max(18000, Math.floor((innerWidth * innerHeight) / 28)));
+let brush = 1;
+
+/* physics state: inertia, beat kicks, band energies, ambient drift */
+let flow = 0.25, bounce = 1, kick = 0, lastKickT = -1000;
+let envFast = 0, envSlow = 0, lowE = 0, highE = 0;
+let eqBase = 620;
+
+/* the third dimension: the plate as an oscillating surface, orbitable */
+let mode3d = false, yaw = 0.7, pitchAng = 0.95, camD = 1.7;
+let orbiting = null; // {x,y} last pointer while orbiting
+
+/* the fourth view: the signal across time — a 3D oscilloscope waterfall */
+let viewMode = 0; // 0 = 2D plate · 1 = 3D plate · 2 = scope (time)
+const SCOPE_W = 96, SCOPE_D = 90;
+const scopeHist = new Float32Array(SCOPE_W * SCOPE_D);
+let scopeHead = 0;
+/* the plate's material — Chladni's law: f ∝ (h/L²)·√(E/ρ).
+   A stiffer, lighter plate carries waves faster, so the same tone draws a
+   *coarser* figure; a dense soft plate draws a finer one and damps sooner. */
+const MATERIALS = {
+  steel:     { modeScale: 1.00, drag: 0.88 },
+  aluminium: { modeScale: 1.02, drag: 0.87 },
+  brass:     { modeScale: 0.74, drag: 0.90 },
+  glass:     { modeScale: 1.06, drag: 0.92 },
+  wood:      { modeScale: 0.88, drag: 0.80 },
+  acrylic:   { modeScale: 0.58, drag: 0.74 },
+};
+const MATERIAL_ORDER = ["steel", "aluminium", "brass", "glass", "wood", "acrylic"];
+let materialName = "steel", material = MATERIALS.steel;
+let focus = 0.9;                        // 0 = soft charcoal dust, 1 = sharp grains
+let maxModes = 1;                       // one clean figure by default
+/* the plate's state of matter — the same field, three ways of answering it */
+const PHASES = {
+  // sand on a plate: the textbook Chladni mechanism — a random walk whose step
+  // is the local amplitude, so grains pile up where the plate is still
+  solid:  { drag: 1.00, flow: 1.00, jit: 1.00, curl: 0.00, sub: 1 },
+  // a vibrated liquid answers at HALF the driving frequency (Faraday's
+  // subharmonic response), is damped by viscosity, and carries tracers along
+  // its own streaming currents
+  liquid: { drag: 1.07, flow: 2.10, jit: 0.45, curl: 0.85, sub: 2 },
+  // dust in a standing wave in air (a Kundt's tube) is driven to the nodes
+  // too — but nothing holds it: no friction, so it hovers and re-forms
+  gas:    { drag: 0.94, flow: 0.85, jit: 2.40, curl: 0.10, sub: 1 },
+};
+const PHASE_ORDER = ["solid", "liquid", "gas"];
+let phaseName = "solid", phase = PHASES.solid;
+let corners = 4;                        // the container: 4 = square … 33 = circle
+let tileMode = false;                   // no edge: the pattern meets itself and repeats
+let frExpand = 1, frT = 0;              // the fractal's outward growth, and its own clock
+let imgAsBg = false;                    // image behind, pulled apart by the grains
+let haze = 0;                           // the video-feedback smear — off by default
+let settleMs = 600, lastModeT = -9999;  // hold a figure long enough to form
+let balance = 0;                        // the a/b weighting of the two wave terms
+let minWalk = 0.0006;                   // grains never fully freeze — the shimmer
+
+/* what the ear would call it, and which overtones are sounding */
+const NOTE_NAMES = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+let fundHz = 0;
+const harmBars = [];
+function noteName(hz) {                     // no cents — for a value we set exactly
+  if (!(hz > 20)) return "—";
+  const near = Math.round(69 + 12 * Math.log2(hz / 440));
+  return NOTE_NAMES[((near % 12) + 12) % 12] + (Math.floor(near / 12) - 1);
+}
+const INTERVALS = ["unison", "minor 2nd", "major 2nd", "minor 3rd", "major 3rd", "fourth",
+                   "tritone", "fifth", "minor 6th", "major 6th", "minor 7th", "major 7th", "octave"];
+function intervalName(a, b) {
+  if (!(a > 20 && b > 20)) return "";
+  const st = Math.abs(12 * Math.log2(b / a));
+  const oct = Math.floor(st / 12), rem = Math.round(st - oct * 12);
+  if (oct === 0) return INTERVALS[Math.min(12, rem)];
+  if (rem === 0) return oct === 1 ? "octave" : `${oct} octaves`;
+  return `${oct} oct + ${INTERVALS[Math.min(12, rem)]}`;
+}
+function noteOf(hz) {
+  if (!(hz > 20)) return null;
+  const midi = 69 + 12 * Math.log2(hz / 440);
+  const near = Math.round(midi);
+  const cents = Math.round((midi - near) * 100);
+  return NOTE_NAMES[((near % 12) + 12) % 12] + (Math.floor(near / 12) - 1) +
+         (cents === 0 ? "" : (cents > 0 ? " +" : " ") + cents + "¢");
+}
+
+/* genesis: the instrument begins as one line and is added to, step by step */
+let genesisLine = false, genesisStage = -1, lineCount = 1;
+
+/* which signal the scope watches: one wave alone, or the whole interaction */
+let scopeSource = "mix";
+const scopeTaps = {};
+function tapFor(name) {
+  if (!AC) return null;
+  if (!scopeTaps[name]) {
+    const an = AC.createAnalyser();
+    an.fftSize = 2048;
+    an.smoothingTimeConstant = 0;
+    scopeTaps[name] = an;
+  }
+  return scopeTaps[name];
+}
+/* up to three plate modes superposed — one per sounding frequency */
+const modes = [{ m: 3, n: 2, w: 1, hz: 0, ph: 0 }];
+const ghosts = [];              // figures on their way out — the in-between
+let morphSec = 0.9;             // how long the plate takes to let one go
+let couple = 0.35;              // 0 = three separate plates · 1 = one shared plate
+let beatAmt = 1;                // how strongly simultaneous modes beat
+let beatPh = 0;                 // one shared phase — energy moves, it does not drain
+let drive = 0, frozen = false;
+const pointers = new Map(); // pointerId → {x, y}; several hands may press the plate
+let brushMode = 1;          // 0 = shake the plate · 1 = lay charcoal · 2 = sweep it
+let brushR = 0.055;         // how wide the hand is
+const freq = new Uint8Array(4096);
+const td = new Uint8Array(2048);
+
+/* time: the plate can run slower than the world */
+let timeScale = 1, simT = 0;
+
+/* palettes: curated, not a color picker — each is a lighting state of the piece */
+const PALETTES = {
+  charcoal: { bg: "#e8e6e0", grain: "#191721", tint: "167,143,208" }, // the projections
+  negative: { bg: "#0d0d10", grain: "#e8e6e0", tint: "167,143,208" }, // the screen inverted
+  violet:   { bg: "#17121f", grain: "#cfc6e6", tint: "167,143,208" }, // the one colour, flooded
+  ember:    { bg: "#0f0c0a", grain: "#e3c9a8", tint: "224,122,95"  }, // heat of the loop
+};
+const PALETTE_ORDER = ["negative", "charcoal", "violet", "ember"];
+let palette = PALETTES.negative, paletteName = "negative"; // begin from black — the piece starts with nothing
+
+/* a still image can stand where the camera stands */
+let userImage = null;
+
+/* plate parameters — the new bank of bars */
+let grainSize = 1, trail = 0.55, paintAlpha = 0.85, warp = 0.35, energyGain = 1, patternAdd = 0;
+
+/* stickiness: each grain can bond to a pixel and pull its colour along */
+let stick = 0.6, hold = 600;
+const carryR = new Uint8Array(MAXG), carryG = new Uint8Array(MAXG), carryB = new Uint8Array(MAXG);
+const holdT = new Float32Array(MAXG);
+
+/* the repaint pipeline: grains pick up the source's pixels and repaint it */
+const SRC_SIDE = 256;
+const srcCanvas = document.createElement("canvas");
+srcCanvas.width = srcCanvas.height = SRC_SIDE;
+const srcCtx = srcCanvas.getContext("2d", { willReadFrequently: true });
+let srcData = null;
+const imgBuf = document.createElement("canvas");
+imgBuf.width = imgBuf.height = SRC_SIDE;
+const imgBufCtx = imgBuf.getContext("2d", { willReadFrequently: true });
+let imgBufReady = false;
+const grainCanvas = document.createElement("canvas");
+const grainCtx = grainCanvas.getContext("2d");
+let glSide = 0, glImg = null;
+
+function hexToRgb(hex) {
+  const v = parseInt(hex.slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+let grainRGB = hexToRgb(PALETTES.negative.grain);
+
+function resize() {
+  const r = canvas.parentElement.getBoundingClientRect();
+  const pad = parseFloat(getComputedStyle(canvas.parentElement).padding) * 2;
+  const side = Math.min(r.width - pad, r.height - pad);
+  if (!(side > 40)) return; // hidden/unlaid-out tab reports 0 — keep old size, retry next frame
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.style.width = canvas.style.height = `${side}px`;
+  W = canvas.width = Math.round(side * dpr);
+  H = canvas.height = Math.round(side * dpr);
+  fbCanvas.width = W; fbCanvas.height = H;
+  ctx.fillStyle = palette.bg; ctx.fillRect(0, 0, W, H);
+  fbCtx.fillStyle = palette.bg; fbCtx.fillRect(0, 0, W, H);
+  glSide = Math.min(1024, Math.max(256, W));
+  grainCanvas.width = grainCanvas.height = glSide;
+  glImg = grainCtx.createImageData(glSide, glSide);
+}
+addEventListener("resize", resize);
+
+function seed() {
+  for (let i = 0; i < MAXG; i++) { px[i] = Math.random(); py[i] = Math.random(); }
+}
+
+/* Chladni's law, actually applied.
+
+   A thin square plate does not answer every tone with whatever figure looks
+   good: its eigenfrequencies rise as (m² + n²), so a given pitch picks the mode
+   pair the plate would really resonate at. (1,1) is the fundamental, where
+   m² + n² = 2, which is what plateHz names.
+
+   This replaces a hand-drawn log curve that mapped frequency to mode by feel.
+   That curve rounded to integers and capped at 9, so it had ~81 figures and
+   whole octaves collapsed onto the same one — which is why the plate behaved
+   like it was flipping through presets.
+
+   Still an idealisation, and worth being straight about: real Chladni plates
+   are free at the edge, and free-edge mode shapes are not pure sine products.
+   The FREQUENCIES below are now the real law; the SHAPES remain the idealised
+   sin(mπx)sin(nπy) family. */
+let plateHz = 110;                      // the fundamental of the plate itself
+const MODE_MAX = 14;
+function modeForHz(hz) {
+  const f0 = Math.max(20, plateHz * material.modeScale);
+  const S = 2 * Math.max(1, hz) / f0;   // the (m²+n²) the plate is being asked for
+  let bm = 1, bn = 1, best = Infinity;
+  for (let m = 1; m <= MODE_MAX; m++) {
+    for (let n = m; n <= MODE_MAX; n++) {
+      const d = Math.abs(m * m + n * n - S);
+      if (d < best) { best = d; bm = m; bn = n; }
+    }
+  }
+  return [Math.min(MODE_MAX, bm + patternAdd), Math.min(MODE_MAX, bn + patternAdd)];
+}
+
+/* Chladni amplitude for a square plate — sum of the superposed modes */
+function fieldA(x, y) {
+  let a = 0;
+  const ca = 1 + balance, cb = 1 - balance;
+  // π: a clamped plate — the edges are forced nodes, so the figure has a rim.
+  // 2π: exactly one period across the square, so the pattern meets itself at
+  // every edge. That is what makes a seamless tile, and a 360° wrap.
+  const kb = tileMode ? Math.PI * 2 : Math.PI;
+  for (let k = 0; k < modes.length; k++) {
+    const md = modes[k], mp = md.m * kb, np = md.n * kb;
+    const beat = md.bw === undefined ? 1 : md.bw;
+    a += md.w * beat * (ca * Math.sin(mp * x) * Math.sin(np * y) + cb * Math.sin(np * x) * Math.sin(mp * y));
+  }
+  for (let k = 0; k < ghosts.length; k++) {
+    const g = ghosts[k], mp = g.m * kb, np = g.n * kb;
+    a += g.w * g.life * (ca * Math.sin(mp * x) * Math.sin(np * y) + cb * Math.sin(np * x) * Math.sin(mp * y));
+  }
+  return a;
+}
+/* the container: a regular polygon, or a circle when the corners run out.
+   Distance from centre to the wall, in the direction th. */
+const CONT_R = 0.47;
+function containerR(th) {
+  if (corners >= 33) return CONT_R;
+  const seg = (Math.PI * 2) / corners;
+  let a = ((th % seg) + seg) % seg - seg / 2;
+  return CONT_R * Math.cos(Math.PI / corners) / Math.cos(a);
+}
+
+/* hands on the plate add local shaking */
+function handAmp(x, y) {
+  let h = 0;
+  for (const p of pointers.values()) {
+    const dx = x - p.x, dy = y - p.y;
+    h += 2.2 * Math.exp(-(dx * dx + dy * dy) / 0.004);
+  }
+  return h;
+}
+
+function step() {
+  const dtS = 0.0167 * timeScale;
+  for (let i = ghosts.length - 1; i >= 0; i--) {
+    ghosts[i].life -= dtS / Math.max(0.05, morphSec);
+    if (ghosts[i].life <= 0) ghosts.splice(i, 1);
+  }
+  // two tones on one plate beat against each other at their difference —
+  // the same beat you hear. Capped before it turns into a strobe.
+  const N = modes.length;
+  if (N > 1) {
+    let spread = 0;
+    for (let k = 1; k < N; k++) spread = Math.max(spread, Math.abs((modes[k].hz || 0) - (modes[0].hz || 0)));
+    beatPh = (beatPh + Math.min(6, spread) * beatAmt * dtS * Math.PI * 2) % (Math.PI * 2);
+    let s = 0;
+    for (let k = 0; k < N; k++) { modes[k].bw = 1 + Math.cos(beatPh + (k * 2 * Math.PI) / N); s += modes[k].bw; }
+    const norm = s > 1e-6 ? N / s : 1;
+    for (let k = 0; k < N; k++) modes[k].bw *= norm;
+  } else if (modes[0]) { modes[0].bw = 1; beatPh = 0; }
+  // audio → mode (spectral peak) + drive (time-domain RMS — honest loudness)
+  if (analyser) {
+    analyser.getByteFrequencyData(freq);
+    let lo = 0, hi = 0;
+    const found = [];
+    for (let i = 8; i < 1600; i++) {
+      const v = freq[i];
+      if (v > 60 && v >= freq[i - 1] && v >= freq[i + 1]) found.push([v, i]);
+      if (i < 80) lo += v; else if (i >= 800) hi += v;
+    }
+    lowE = lowE * 0.8 + (lo / 72 / 255) * 0.2;    // the body of the sound
+    highE = highE * 0.8 + (hi / 800 / 255) * 0.2; // its shimmer
+    // the frequency overlay: up to three distinct peaks, each its own plate mode
+    found.sort((a, b) => b[0] - a[0]);
+    const picked = [];
+    for (const cand of found) {
+      if (picked.every((p) => Math.abs(p[1] - cand[1]) > 6)) picked.push(cand);
+      if (picked.length === 3) break;
+    }
+    if (picked.length > maxModes) picked.length = maxModes;
+    // a figure needs stillness to form: don't re-draw the plate every frame
+    if (picked.length && simT - lastModeT >= settleMs) {
+      lastModeT = simT;
+      const wSum = picked.reduce((s, p) => s + p[0], 0);
+      for (let k = 0; k < picked.length; k++) {
+        // Faraday: a liquid's figure is the one belonging to half the tone
+        const hz = picked[k][1] * (AC.sampleRate / analyser.fftSize) / phase.sub;
+        const ms = material.modeScale;
+        const [tm, tn] = modeForHz(hz);
+        const tw = picked[k][0] / wSum;
+        if (modes[k]) {
+          // the old figure does not vanish — it lingers and the two superpose,
+          // which is what a real plate does when you move between tones
+          if ((modes[k].m !== tm || modes[k].n !== tn) && morphSec > 0.02) {
+            ghosts.push({ m: modes[k].m, n: modes[k].n, w: modes[k].w, life: 1 });
+            if (ghosts.length > 3) ghosts.shift();
+          }
+          modes[k].m = tm; modes[k].n = tn; modes[k].hz = hz;
+          modes[k].w = modes[k].w * 0.85 + tw * 0.15;
+        } else {
+          modes[k] = { m: tm, n: tn, w: tw * 0.3, hz, ph: 0 };
+        }
+      }
+      modes.length = picked.length;
+    }
+    if (picked.length) {
+      // the tone, and how its overtone series is sounding right now
+      const binHz = AC.sampleRate / analyser.fftSize;
+      fundHz = picked[0][1] * binHz;
+      harmBars.length = 0;
+      for (let k = 1; k <= 10; k++) {
+        const b = Math.round(picked[0][1] * k);
+        if (b >= freq.length) break;
+        harmBars.push(freq[b] / 255);
+      }
+    }
+    analyser.getByteTimeDomainData(td);
+    let sum = 0;
+    for (let i = 0; i < td.length; i++) { const v = (td[i] - 128) / 128; sum += v * v; }
+    const rms = Math.sqrt(sum / td.length);            // 0..~0.7 at limiter ceiling
+    drive = drive * 0.85 + Math.min(1, rms * 2.4) * 0.15;
+  }
+  // onset: a REAL hit is a sharp jump with a refractory gap — not the loop's slow breathing
+  if (analyser) {
+    envFast = envFast * 0.5 + drive * 0.5;
+    envSlow = envSlow * 0.97 + drive * 0.03;
+    const onset = envFast - envSlow * 1.25;
+    if (onset > 0.06 && bounce > 0 && simT - lastKickT > 350) {
+      kick = Math.min(1.5, kick + onset * 14 * bounce * (0.5 + lowE));
+      lastKickT = simT;
+    }
+  }
+  kick *= (1 - 0.3 * timeScale);
+  // each channel is listened to separately, so each tone owns a figure
+  if (AC && CH.length) {
+    const ms = material.modeScale;
+    for (let c = 0; c < 3; c++) {
+      const ch = CH[c];
+      if (!ch.active) { ch.energy *= 0.85; continue; }
+      // how loud this channel actually is — silence must mean stillness
+      ch.tap.getByteTimeDomainData(td);
+      let sc2 = 0;
+      for (let q = 0; q < td.length; q += 4) { const vv = (td[q] - 128) / 128; sc2 += vv * vv; }
+      const rmsC = Math.sqrt(sc2 / (td.length / 4));
+      ch.energy = ch.energy * 0.8 + Math.min(1, rmsC * 2.4) * 0.2;
+      const hzc = pitchOf(ch.tap) / phase.sub;
+      if (hzc > 20 && simT - lastModeT >= 0) {
+        ch.pitch = hzc;
+        const [cm, cn] = modeForHz(hzc);
+        ch.m = cm; ch.n = cn;
+      }
+    }
+  }
+  // ambient mode plays itself: the colour of the loop drifts slowly
+  if (document.fullscreenElement && nodes && AC) {
+    const lfo = Math.sin(simT * 0.00006);
+    nodes.eq.frequency.setTargetAtTime(eqBase * Math.pow(2, lfo * 0.8), AC.currentTime, 0.4);
+  }
+  simT += 16.7 * timeScale;
+  // physics: inertia + drainage toward the still lines + shimmer jitter + beat kicks
+  const drag = material.drag;
+  // forces feed velocities against drag: scale by (1-drag) so terminal speeds
+  // match the plate's real pace instead of boiling over
+  const jit = frozen ? 0 : (0.0012 + (drive * 0.045 + highE * 0.02) * energyGain) * 0.55 * timeScale;
+  const flowF = frozen ? 0 : flow * 0.00015 * (1 + drive) * timeScale;
+  const kickF = frozen ? 0 : kick * 0.0012 * timeScale;
+  const nModes = modes.length;
+  const inFr = viewMode === 3;
+  // the fractal grows on sound, not on the wall clock — in silence it holds,
+  // which is the whole promise that nothing moves when nothing sounds
+  if (inFr) {
+    if (drive > 0.01) frT += 16.7 * timeScale;
+    frExpand = 1 + ((frT * 0.00004) % 3);
+  }
+  const octs = inFr ? 3 : 1;                          // self-similar repetitions
+  const ca = 1 + balance, cb = 1 - balance;
+  for (let i = 0; i < activeCount; i++) {
+    const x = px[i], y = py[i];
+    let A = 0, dAdx = 0, dAdy = 0;
+    let amp = 1, sc = 1;
+    const myCh = (CH.length && chanOf) ? CH[chanOf[i]] : null;
+    const solo = myCh && myCh.active && myCh.energy > 0.2;
+    for (let o = 0; o < octs; o++) {
+      // in the fractal view the plate's own figure is read at growing scales,
+      // so the same pattern repeats outward into the empty space
+      const ux = inFr ? 0.5 + (x - 0.5) * frExpand * sc : x;
+      const uy = inFr ? 0.5 + (y - 0.5) * frExpand * sc : y;
+      // Three plates in a stack, one per channel. A grain belongs to one of
+      // them, so at couple = 0 each plate answers only its own channel and the
+      // three figures simply lie over one another. At couple = 1 every grain
+      // feels every channel — one plate, and the figures interfere. Between,
+      // the plates are touching rather than bolted or apart.
+      const own = solo ? 1 - couple : 0;
+      const shared = solo ? couple : 1;
+      const useN = (own > 0 ? 1 : 0) + (shared > 0 ? nModes : 0);
+      for (let k = 0; k < useN; k++) {
+        const mine = own > 0 && k === 0;
+        const md = mine ? myCh : modes[k - (own > 0 ? 1 : 0)];
+        const beat = mine || md.bw === undefined ? 1 : md.bw;
+        const mp = md.m * Math.PI, np = md.n * Math.PI;
+        const w = (mine ? own : shared * md.w * beat) * amp;
+        const smx = Math.sin(mp * ux), cmx = Math.cos(mp * ux);
+        const snx = Math.sin(np * ux), cnx = Math.cos(np * ux);
+        const smy = Math.sin(mp * uy), cmy = Math.cos(mp * uy);
+        const sny = Math.sin(np * uy), cny = Math.cos(np * uy);
+        // f = a·sin(πm x)sin(πn y) + b·sin(πn x)sin(πm y)
+        A += w * (ca * smx * sny + cb * snx * smy);
+        // gradient of the field — charcoal drains off the moving regions
+        dAdx += w * (ca * mp * cmx * sny + cb * np * cnx * smy) * sc;
+        dAdy += w * (ca * np * smx * cny + cb * mp * snx * cmy) * sc;
+      }
+      amp *= 0.5; sc *= 2;
+    }
+    const aAbs = Math.abs(A) + handAmp(x, y);
+    // the pixel acts back on the grain: dark carried pixels are heavy ink,
+    // bright ones fly — the image and the plate shape each other
+    const wgt = srcData ? (0.65 + (carryR[i] + carryG[i] + carryB[i]) * 0.00085) : 1;
+    // the classic Chladni walk: a random step scaled by how hard the plate
+    // shakes here — with a floor, so even settled grains keep shimmering
+    // the level driving THIS grain: its own channel, or the room mix
+    const lvl = solo ? myCh.energy * (1 - couple) + drive * couple : drive;
+    if (lvl < 0.01) {                       // silence — let it settle and stop
+      vx[i] *= 0.9; vy[i] *= 0.9;
+      px[i] = x + vx[i]; py[i] = y + vy[i];
+      continue;
+    }
+    const walk = Math.max(minWalk * timeScale * Math.min(1, lvl * 6),
+                          (jit + kickF) * aAbs * wgt * phase.jit);
+    // solid: it settles · liquid: it is carried and swirls · gas: it disperses
+    let ax = -A * dAdx * flowF * phase.flow;
+    let ay = -A * dAdy * flowF * phase.flow;
+    if (phase.curl > 0) {                       // a current along the nodal lines
+      ax += -dAdy * flowF * phase.curl * 0.7;
+      ay += dAdx * flowF * phase.curl * 0.7;
+    }
+    vx[i] = vx[i] * (drag * phase.drag > 0.985 ? 0.985 : drag * phase.drag) + ax + (Math.random() - 0.5) * walk;
+    vy[i] = vy[i] * (drag * phase.drag > 0.985 ? 0.985 : drag * phase.drag) + ay + (Math.random() - 0.5) * walk;
+    px[i] = x + vx[i];
+    py[i] = y + vy[i];
+    if (inFr) {
+      // in the vacuum the pattern has walls: it bounces off the container
+      const dx0 = px[i] - 0.5, dy0 = py[i] - 0.5;
+      const rr = Math.sqrt(dx0 * dx0 + dy0 * dy0);
+      if (rr > 0.0001) {
+        const th = Math.atan2(dy0, dx0), Rb = containerR(th);
+        if (rr > Rb) {
+          const nx = dx0 / rr, ny = dy0 / rr;
+          const dot = vx[i] * nx + vy[i] * ny;
+          vx[i] -= 2 * dot * nx; vy[i] -= 2 * dot * ny;
+          px[i] = 0.5 + nx * Rb * 0.995;
+          py[i] = 0.5 + ny * Rb * 0.995;
+        }
+      }
+    } else {
+      if (px[i] < 0) px[i] += 1; else if (px[i] > 1) px[i] -= 1;
+      if (py[i] < 0) py[i] += 1; else if (py[i] > 1) py[i] -= 1;
+    }
+  }
+}
+
+/* one grain, laid down with a soft edge: the centre is full ink, the rim
+   fades — charcoal dust rather than pixels. Focus sharpens it toward grains. */
+function splat(d, u, v, gs, r, g, b, A, side) {
+  side = side || glSide;
+  const rim = (A * (0.12 + 0.72 * focus)) | 0;
+  if (tileMode) {
+    // the brush wraps too — a grain on the right edge paints onto the left,
+    // or the tile shows a seam exactly one grain wide
+    const wx = (u * side) | 0, wy = (v * side) | 0;
+    for (let dy = -1; dy <= gs; dy++) {
+      const row = ((wy + dy + side) % side) * side;
+      for (let dx = -1; dx <= gs; dx++) {
+        const edge = (dx < 0 || dy < 0 || dx >= gs || dy >= gs);
+        const a = edge ? rim : A;
+        const o = (row + ((wx + dx + side) % side)) * 4;
+        if (a > d[o + 3]) { d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = a; }
+      }
+    }
+    return;
+  }
+  const gx = (u * (side - gs - 2)) | 0;
+  const gy = (v * (side - gs - 2)) | 0;
+  if (gx < 1 || gy < 1) return;
+  for (let dy = -1; dy <= gs; dy++) {
+    const yy = gy + dy;
+    let o = (yy * side + gx - 1) * 4;
+    for (let dx = -1; dx <= gs; dx++) {
+      const edge = (dx < 0 || dy < 0 || dx >= gs || dy >= gs);
+      const a = edge ? rim : A;
+      if (a > d[o + 3]) { d[o] = r; d[o + 1] = g; d[o + 2] = b; d[o + 3] = a; }
+      o += 4;
+    }
+  }
+}
+
+function visualSource() {
+  if (camVideo && camVideo.readyState >= 2 && camVideo.videoWidth > 0)
+    return { el: camVideo, w: camVideo.videoWidth, h: camVideo.videoHeight };
+  if (userImage && userImage.naturalWidth > 0)
+    return { el: userImage, w: userImage.naturalWidth, h: userImage.naturalHeight };
+  return null;
+}
+
+/* the plate in three dimensions: the standing wave oscillates the surface,
+   antinodes heave, the nodal lines hold still — drag to orbit, wheel to dolly */
+function render3d() {
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(0, 0, W, H);
+  // sample the source for grain colours (same bonding rules as 2D)
+  const src = visualSource();
+  if (src) {
+    const scale = Math.max(SRC_SIDE / src.w, SRC_SIDE / src.h);
+    const dw = src.w * scale, dh = src.h * scale;
+    srcCtx.drawImage(src.el, (SRC_SIDE - dw) / 2, (SRC_SIDE - dh) / 2, dw, dh);
+    srcData = srcCtx.getImageData(0, 0, SRC_SIDE, SRC_SIDE).data;
+  } else {
+    srcData = null;
+  }
+  ctx.globalAlpha = Math.min(0.06, drive * 0.08);
+  ctx.fillStyle = `rgb(${palette.tint})`;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 1;
+
+  // camera + the oscillation over time
+  const cyw = Math.cos(yaw), syw = Math.sin(yaw);
+  const cp = Math.cos(pitchAng), sp = Math.sin(pitchAng);
+  const fl = 1.35, K = W * 0.92;
+  const phase = Math.sin(simT * 0.0025);
+  const amp = 0.16 + drive * 0.14;
+  const proj = (x, y, z) => {
+    const X0 = x - 0.5, Y0 = y - 0.5;
+    const X = X0 * cyw - Y0 * syw;
+    const Y = X0 * syw + Y0 * cyw;
+    const Y2 = Y * cp - z * sp;
+    const Z2 = Y * sp + z * cp;
+    const s = fl / (camD + Y2);
+    return [W / 2 + X * s * K, H / 2 - Z2 * s * K, s];
+  };
+
+  // the surface itself — a faint wireframe, flapping with the field
+  ctx.strokeStyle = "rgba(138,135,127,0.20)";
+  ctx.lineWidth = 1;
+  const GN = 24, gp = [];
+  for (let gy = 0; gy <= GN; gy++) {
+    for (let gx = 0; gx <= GN; gx++) {
+      const u = gx / GN, v = gy / GN;
+      gp.push(proj(u, v, fieldA(u, v) * amp * phase));
+    }
+  }
+  for (let gy = 0; gy <= GN; gy++) {
+    ctx.beginPath();
+    for (let gx = 0; gx <= GN; gx++) {
+      const p = gp[gy * (GN + 1) + gx];
+      if (gx === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+    }
+    ctx.stroke();
+  }
+  for (let gx = 0; gx <= GN; gx++) {
+    ctx.beginPath();
+    for (let gy = 0; gy <= GN; gy++) {
+      const p = gp[gy * (GN + 1) + gx];
+      if (gy === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+    }
+    ctx.stroke();
+  }
+
+  // grains riding the surface, with the same trails and pixel-bonding
+  if (glImg) {
+    const d = glImg.data;
+    if (trail === 0) {
+      d.fill(0);
+    } else {
+      for (let i = 3; i < d.length; i += 4) { const a = d[i]; if (a) d[i] = (a * trail) | 0; }
+    }
+    const t = simT * 0.001;
+    const Aal = (paintAlpha * 255) | 0;
+    const wob = warp * drive;
+    const dtMs = 16.7 * timeScale;
+    const glScale = glSide / W;
+    for (let i = 0; i < activeCount; i++) {
+      const myCh = (CH.length && chanOf) ? CH[chanOf[i]] : null;
+      const cc = (myCh && myCh.active && myCh.energy > 0.2) ? myCh.colour : grainRGB;
+      let r = cc[0], g = cc[1], b = cc[2];
+      if (srcData && brush > 0) {
+        let sr, sg, sb;
+        if (holdT[i] > 0 && Math.random() < stick) {
+          holdT[i] -= dtMs;
+          sr = carryR[i]; sg = carryG[i]; sb = carryB[i];
+        } else {
+          let sx = px[i] + Math.sin(py[i] * 13 + t * 1.7) * wob * 0.25;
+          let sy2 = py[i] + Math.sin(px[i] * 11 - t * 1.3) * wob * 0.25;
+          sx = sx < 0 ? 0 : sx > 1 ? 1 : sx;
+          sy2 = sy2 < 0 ? 0 : sy2 > 1 ? 1 : sy2;
+          const si = (((sy2 * (SRC_SIDE - 1)) | 0) * SRC_SIDE + ((sx * (SRC_SIDE - 1)) | 0)) * 4;
+          sr = carryR[i] = srcData[si];
+          sg = carryG[i] = srcData[si + 1];
+          sb = carryB[i] = srcData[si + 2];
+          holdT[i] = hold * (0.5 + Math.random());
+          if (imgAsBg && Math.random() < 0.5) {
+            // lifted: fade that speck of the picture away
+            imgBufCtx.fillStyle = `rgba(${hexToRgb(palette.bg).join(",")},0.16)`;
+            imgBufCtx.fillRect((sx * (SRC_SIDE - 1)) | 0, (sy2 * (SRC_SIDE - 1)) | 0, 2, 2);
+          }
+        }
+        r = (r + (sr - r) * brush) | 0;
+        g = (g + (sg - g) * brush) | 0;
+        b = (b + (sb - b) * brush) | 0;
+      }
+      const z = fieldA(px[i], py[i]) * amp * phase;
+      const p = proj(px[i], py[i], z);
+      const gs2 = Math.max(1, Math.min(4, Math.round(grainSize * p[2] * 1.1)));
+      const u2 = (p[0] * glScale) / glSide, v2 = (p[1] * glScale) / glSide;
+      if (u2 < 0 || v2 < 0 || u2 > 1 || v2 > 1) continue;
+      splat(d, u2, v2, gs2, r, g, b, Aal);
+    }
+    grainCtx.putImageData(glImg, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(grainCanvas, 0, 0, W, H);
+  }
+}
+
+/* the scope: every frame the live waveform enters at the front and recedes
+   into the past — the signal's own history as a landscape */
+function renderScope() {
+  // capture the newest slice from the chosen source
+  const an = scopeTaps[scopeSource] || analyser;
+  if (AC && an) {
+    an.getByteTimeDomainData(td);
+    const row = scopeHead * SCOPE_W;
+    for (let s = 0; s < SCOPE_W; s++) {
+      const j = ((s / (SCOPE_W - 1)) * (td.length - 1)) | 0;
+      scopeHist[row + s] = (td[j] - 128) / 128;
+    }
+  } else {
+    scopeHist.fill(0, scopeHead * SCOPE_W, scopeHead * SCOPE_W + SCOPE_W);
+  }
+  scopeHead = (scopeHead + 1) % SCOPE_D;
+
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = Math.min(0.06, drive * 0.08);
+  ctx.fillStyle = `rgb(${palette.tint})`;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 1;
+
+  const cyw = Math.cos(yaw), syw = Math.sin(yaw);
+  const cp = Math.cos(pitchAng), sp = Math.sin(pitchAng);
+  const fl = 1.35, K = W * 0.92;
+  const zAmp = 0.26 + drive * 0.12;
+  const proj = (x, y, z) => {
+    const X0 = x - 0.5, Y0 = y - 0.5;
+    const X = X0 * cyw - Y0 * syw;
+    const Y = X0 * syw + Y0 * cyw;
+    const Y2 = Y * cp - z * sp;
+    const Z2 = Y * sp + z * cp;
+    const s = fl / (camD + Y2);
+    return [W / 2 + X * s * K, H / 2 - Z2 * s * K];
+  };
+
+  ctx.lineWidth = 1.1;
+  const gr = grainRGB;
+  for (let r = SCOPE_D - 1; r >= 0; r--) {          // far past first, newest last
+    const row = ((scopeHead - 1 - r + SCOPE_D * 2) % SCOPE_D) * SCOPE_W;
+    const yPos = r / (SCOPE_D - 1);                  // 0 = now (front), 1 = oldest
+    const a = Math.max(0.06, 1 - yPos * 0.95);
+    ctx.strokeStyle = r === 0
+      ? "rgba(167,143,208,1)"                        // the present, in violet
+      : `rgba(${gr[0]},${gr[1]},${gr[2]},${a.toFixed(3)})`;
+    ctx.beginPath();
+    for (let s = 0; s < SCOPE_W; s++) {
+      const p = proj(s / (SCOPE_W - 1), yPos, scopeHist[row + s] * zAmp);
+      if (s === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]);
+    }
+    ctx.stroke();
+  }
+}
+
+/* genesis stage 0–1: one line across the darkness — the single signal */
+function renderLine() {
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(0, 0, W, H);
+  // one line, then two that interfere, then three, then four — each a real
+  // signal from the instrument, stacked so the eye can watch them meet
+  const srcs = ["mix", "toneA", "toneB", "mic", "loop"];
+  const picked = lineCount === 1 ? ["mix"] : srcs.slice(1, 1 + lineCount);
+  const n = picked.length;
+  const span = H / (n + 1);
+  for (let k = 0; k < n; k++) {
+    const tap = scopeTaps[picked[k]];
+    if (AC && tap) tap.getByteTimeDomainData(td); else td.fill(128);
+    const mid = span * (k + 1);
+    const amp = Math.min(span * 0.42, H * 0.3);
+    ctx.strokeStyle = k === 0 ? "rgba(167,143,208,0.95)" : `rgba(207,204,196,${(0.9 - k * 0.14).toFixed(2)})`;
+    ctx.lineWidth = Math.max(1.1, W / 700);
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 2) {
+      const j = ((x / W) * (td.length - 1)) | 0;
+      const y = mid + ((td[j] - 128) / 128) * amp;
+      if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+}
+
+/* the fractal view: not a generic set — the plate's OWN figure, read at
+   growing scales so it repeats outward into empty space, inside a container
+   the grains bounce off. Corners: 4 = square … 33 = a circle. */
+function renderFractal() {
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(0, 0, W, H);
+  // the wall
+  ctx.strokeStyle = "rgba(138,135,127,0.35)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  if (corners >= 33) {
+    ctx.arc(W / 2, H / 2, CONT_R * Math.min(W, H), 0, Math.PI * 2);
+  } else {
+    for (let k = 0; k <= corners; k++) {
+      const th = (k / corners) * Math.PI * 2 - Math.PI / 2;
+      const R = containerR(th) * Math.min(W, H);
+      const xx = W / 2 + Math.cos(th) * R, yy = H / 2 + Math.sin(th) * R;
+      if (k === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+  }
+  ctx.stroke();
+  // the growing figure, in grains
+  if (glImg) {
+    const d = glImg.data;
+    if (trail === 0) { d.fill(0); }
+    else { for (let i = 3; i < d.length; i += 4) { const a = d[i]; if (a) d[i] = (a * trail) | 0; } }
+    const A2 = (paintAlpha * 255) | 0;
+    const S = Math.min(W, H), ox = (W - S) / 2, oy = (H - S) / 2;
+    for (let i = 0; i < activeCount; i++) {
+      const u = ((px[i] - 0.5) * S + S / 2 + ox) / W;
+      const v = ((py[i] - 0.5) * S + S / 2 + oy) / H;
+      if (u < 0 || v < 0 || u > 1 || v > 1) continue;
+      splat(d, u, v, grainSize, grainRGB[0], grainRGB[1], grainRGB[2], A2);
+    }
+    grainCtx.putImageData(glImg, 0, 0);
+    ctx.drawImage(grainCanvas, 0, 0, W, H);
+  }
+}
+
+function render() {
+  if (genesisLine) { renderLine(); return; }
+  if (viewMode === 3) { renderFractal(); return; }
+  if (viewMode === 2) { renderScope(); return; }
+  if (mode3d) { render3d(); return; }
+  // fresh ground every frame — feedback is bounded, never accumulates to mud
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(0, 0, W, H);
+  // augmentation: the previous frame re-enters, slightly zoomed and rotated —
+  // camera→projector feedback, the video artist's layer
+  if (haze > 0.002 && fbCanvas.width > 0 && fbCanvas.height > 0) {
+    const z = 1 + 0.012 * timeScale;
+    ctx.save();
+    ctx.translate(W / 2, H / 2);
+    ctx.scale(z, z);
+    ctx.rotate((0.0012 + drive * 0.004) * timeScale);
+    ctx.globalAlpha = haze;
+    ctx.drawImage(fbCanvas, -W / 2, -H / 2, W, H);
+    ctx.restore();
+  }
+  // sample the source (camera frame or chosen image) at low resolution:
+  // the grains will pick its pixels up and repaint it with their movement
+  const src = visualSource();
+  if (src) {
+    const scale = Math.max(SRC_SIDE / src.w, SRC_SIDE / src.h);
+    const dw = src.w * scale, dh = src.h * scale;
+    if (imgAsBg) {
+      // the picture lies on the plate; the grains carry it away piece by piece.
+      // a live camera keeps replenishing it, so erosion and image compete.
+      if (!imgBufReady || src.el.tagName === "VIDEO") {
+        imgBufCtx.globalAlpha = imgBufReady ? 0.06 : 1;
+        imgBufCtx.drawImage(src.el, (SRC_SIDE - dw) / 2, (SRC_SIDE - dh) / 2, dw, dh);
+        imgBufCtx.globalAlpha = 1;
+        imgBufReady = true;
+      }
+      srcCtx.drawImage(imgBuf, 0, 0);
+    } else {
+      srcCtx.drawImage(src.el, (SRC_SIDE - dw) / 2, (SRC_SIDE - dh) / 2, dw, dh);
+    }
+    srcData = srcCtx.getImageData(0, 0, SRC_SIDE, SRC_SIDE).data;
+  } else {
+    srcData = null;
+  }
+  if (imgAsBg && src) {
+    // the picture itself, still lying there — what the grains have not yet taken
+    ctx.globalAlpha = 1;
+    ctx.drawImage(imgBuf, 0, 0, W, H);
+  }
+  // the flood colour arrives only on high energy
+  if (haze > 0.002) {
+    ctx.globalAlpha = Math.min(0.06, drive * 0.08);
+    ctx.fillStyle = `rgb(${palette.tint})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+  // the grains repaint: fade the old paint, lay down this frame's strokes
+  if (glImg) {
+    const d = glImg.data;
+    if (trail === 0) {
+      d.fill(0);
+    } else {
+      for (let i = 3; i < d.length; i += 4) { const a = d[i]; if (a) d[i] = (a * trail) | 0; }
+    }
+    const t = simT * 0.001;
+    const A = (paintAlpha * 255) | 0;
+    const gs = grainSize;
+    const wob = warp * drive;
+    const dtMs = 16.7 * timeScale;
+    for (let i = 0; i < activeCount; i++) {
+      const myCh = (CH.length && chanOf) ? CH[chanOf[i]] : null;
+      const cc = (myCh && myCh.active && myCh.energy > 0.2) ? myCh.colour : grainRGB;
+      let r = cc[0], g = cc[1], b = cc[2];
+      if (srcData && brush > 0) {
+        let sr, sg, sb;
+        if (holdT[i] > 0 && Math.random() < stick) {
+          // bonded: the grain keeps the pixel it grabbed and pulls it along
+          holdT[i] -= dtMs;
+          sr = carryR[i]; sg = carryG[i]; sb = carryB[i];
+        } else {
+          // re-bond: read the image where the grain is (warped by the sound)
+          let sx = px[i] + Math.sin(py[i] * 13 + t * 1.7) * wob * 0.25;
+          let sy = py[i] + Math.sin(px[i] * 11 - t * 1.3) * wob * 0.25;
+          sx = sx < 0 ? 0 : sx > 1 ? 1 : sx;
+          sy = sy < 0 ? 0 : sy > 1 ? 1 : sy;
+          const si = (((sy * (SRC_SIDE - 1)) | 0) * SRC_SIDE + ((sx * (SRC_SIDE - 1)) | 0)) * 4;
+          sr = carryR[i] = srcData[si];
+          sg = carryG[i] = srcData[si + 1];
+          sb = carryB[i] = srcData[si + 2];
+          holdT[i] = hold * (0.5 + Math.random()); // bonds vary, like real grip
+        }
+        // Brush: how much the grain is image-pickup versus charcoal ink
+        r = (r + (sr - r) * brush) | 0;
+        g = (g + (sg - g) * brush) | 0;
+        b = (b + (sb - b) * brush) | 0;
+      }
+      splat(d, px[i], py[i], gs, r, g, b, A);
+      // the print, if armed: same grain, same colour, at 300 dpi — accumulating
+      if (pBuf) splat(pBuf, px[i], py[i], pGs, r, g, b, A, pSide);
+    }
+    if (pBuf) pFrames++;
+    grainCtx.putImageData(glImg, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(grainCanvas, 0, 0, W, H);
+  }
+  // remember this frame for the next pass of the loop
+  fbCtx.drawImage(canvas, 0, 0);
+}
+
+/* ---------- the analyser window: a second pair of eyes on the signal ----------
+   spectrogram (time × log-frequency × intensity), bars, or peak-hold.
+   Watches whatever the Scope source is set to. */
+const ANA_MODES = ["spectrogram", "bars", "peak-hold"];
+let anaMode = 0, anaOn = false;
+const anaCv = $("anaSpec"), anaCtx = anaCv.getContext("2d");
+const ANA_FMIN = 30, ANA_FMAX = 8000;
+const anaPeaks = new Float32Array(512);
+let anaBuf = new Uint8Array(1024);
+let anaCol = 0;
+
+$("ana").addEventListener("click", () => {
+  anaOn = !anaOn;
+  $("anaWin").classList.toggle("on", anaOn);
+  $("ana").textContent = `Analyser: ${anaOn ? "on" : "off"}`;
+  $("ana").classList.toggle("armed", anaOn);
+  if (anaOn) { anaCtx.fillStyle = "#08080a"; anaCtx.fillRect(0, 0, anaCv.width, anaCv.height); anaCol = 0; }
+});
+$("anaClose").addEventListener("click", () => $("ana").click());
+$("anaMode").addEventListener("click", () => {
+  anaMode = (anaMode + 1) % ANA_MODES.length;
+  $("anaMode").textContent = ANA_MODES[anaMode];
+  anaCtx.fillStyle = "#08080a"; anaCtx.fillRect(0, 0, anaCv.width, anaCv.height);
+  anaCol = 0;
+  anaPeaks.fill(0);
+});
+// drag the window by its head
+$("anaWin").querySelector(".ana-head").addEventListener("pointerdown", (e) => {
+  if (e.target.tagName === "BUTTON") return;
+  e.preventDefault();
+  const win = $("anaWin"), r = win.getBoundingClientRect();
+  const wrap = canvas.parentElement.getBoundingClientRect();
+  win.style.bottom = "auto";
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  const move = (ev) => {
+    win.style.left = (ev.clientX - sx - wrap.left) + "px";
+    win.style.top = (ev.clientY - sy - wrap.top) + "px";
+  };
+  const up = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", up); };
+  document.addEventListener("pointermove", move);
+  document.addEventListener("pointerup", up);
+});
+
+/* heat: quiet → deep violet → screen white */
+function heat(v) {
+  if (v <= 0.006) return "#08080a";
+  if (v < 0.45) { const k = v / 0.45; return `rgb(${(20 + 89 * k) | 0},${(16 + 68 * k) | 0},${(30 + 126 * k) | 0})`; }
+  const k = (v - 0.45) / 0.55;
+  return `rgb(${(109 + 123 * k) | 0},${(84 + 146 * k) | 0},${(156 + 68 * k) | 0})`;
+}
+
+function drawAnalyser() {
+  if (!anaOn) return;
+  const an = scopeTaps[scopeSource] || analyser;
+  const W2 = anaCv.width, H2 = anaCv.height;
+  if (!(AC && an)) {
+    anaCtx.fillStyle = "#08080a"; anaCtx.fillRect(0, 0, W2, H2);
+    return;
+  }
+  const bins = an.frequencyBinCount;
+  const buf = anaBuf.length === bins ? anaBuf : (anaBuf = new Uint8Array(bins));
+  an.getByteFrequencyData(buf);
+  const binHz = AC.sampleRate / an.fftSize;
+  const lg = Math.log(ANA_FMAX / ANA_FMIN);
+  const yOfHz = (hz) => H2 - H2 * Math.log(hz / ANA_FMIN) / lg;
+  const magAt = (hz) => {
+    const b = Math.min(bins - 1, Math.max(0, Math.round(hz / binHz)));
+    const v = buf[b] / 255;
+    return v > 0 ? Math.pow(v, 0.55) : 0;   // gamma-lift the quiet overtones
+  };
+  window.__anaDbg = { bins, binHz: +binHz.toFixed(1), max: Math.max.apply(null, buf.slice(0, 400)) };
+
+  if (anaMode === 0) {
+    // spectrogram: one column per frame. Sweep the BINS (not the pixels), so
+    // every bin with energy paints, however the log axis compresses it.
+    const col = anaCol % W2;
+    anaCtx.fillStyle = "#08080a";
+    anaCtx.fillRect(col, 0, 1, H2);
+    const bMin = Math.max(1, Math.floor(ANA_FMIN / binHz));
+    const bMax = Math.min(bins - 1, Math.ceil(ANA_FMAX / binHz));
+    for (let b = bMin; b <= bMax; b++) {
+      const v = buf[b] / 255;
+      if (v <= 0.01) continue;
+      const y0 = yOfHz((b + 0.5) * binHz), y1 = yOfHz(Math.max(ANA_FMIN, (b - 0.5) * binHz));
+      const yTop = Math.max(0, Math.min(y0, y1));
+      const h = Math.max(1, Math.abs(y1 - y0));
+      anaCtx.fillStyle = heat(Math.pow(v, 0.55));
+      anaCtx.fillRect(col, yTop, 1, h);
+    }
+    anaCtx.fillStyle = "rgba(232,230,224,0.3)";
+    anaCtx.fillRect((col + 1) % W2, 0, 1, H2);
+    anaCol += 2;
+  } else {
+    anaCtx.fillStyle = "#08080a";
+    anaCtx.fillRect(0, 0, W2, H2);
+    const BANDS = 64, bw = W2 / BANDS;
+    for (let i = 0; i < BANDS; i++) {
+      const hz = ANA_FMIN * Math.pow(ANA_FMAX / ANA_FMIN, i / (BANDS - 1));
+      const v = magAt(hz);
+      const h = v * (H2 - 4);
+      anaCtx.fillStyle = heat(0.25 + v * 0.75);
+      anaCtx.fillRect(i * bw + 0.5, H2 - h, bw - 1, h);
+      if (anaMode === 2) {
+        anaPeaks[i] = Math.max(v, anaPeaks[i] - 0.006);
+        anaCtx.fillStyle = "rgba(232,230,224,0.9)";
+        anaCtx.fillRect(i * bw + 0.5, H2 - anaPeaks[i] * (H2 - 4) - 1.5, bw - 1, 1.5);
+      }
+    }
+    // octave hairlines, so the eye has a scale
+    anaCtx.fillStyle = "rgba(138,135,127,0.25)";
+    for (let hz = 62.5; hz < ANA_FMAX; hz *= 2) {
+      const xx = W2 * Math.log(hz / ANA_FMIN) / Math.log(ANA_FMAX / ANA_FMIN);
+      anaCtx.fillRect(xx, 0, 1, H2);
+    }
+  }
+  $("anaSrcLbl").textContent = scopeSource;
+}
+
+const harmCv = $("harm"), harmCtx = harmCv.getContext("2d");
+const micProbe = new Uint8Array(2048);
+function pitchOf(tap) {
+  if (!(AC && tap)) return 0;
+  const bins = tap.frequencyBinCount;
+  tap.getByteFrequencyData(micProbe);
+  const binHz = AC.sampleRate / tap.fftSize;
+  const top = Math.min(bins - 1, Math.floor(4000 / binHz));
+  let peak = 0, pi = 0;
+  for (let i = 2; i < top; i++) if (micProbe[i] > peak) { peak = micProbe[i]; pi = i; }
+  return peak > 45 ? pi * binHz : 0;
+}
+
+function drawTone() {
+  // every channel keeps its own tonic reference
+  if (CH.length) {
+    $("read-0").textContent = oscA ? `${toneAHz} Hz · ${noteName(toneAHz)}` : "off";
+    $("read-1").textContent = oscB ? `${toneBHz} Hz · ${noteName(toneBHz)}` : "off";
+    const mh = CH[2].active ? pitchOf(CH[2].tap) : 0;
+    $("read-2").textContent = CH[2].active ? (mh ? `${Math.round(mh)} Hz · ${noteName(mh)}` : "live") : "off";
+  }
+  const n = fundHz > 20 ? noteOf(fundHz) : null;
+  // and everything sounding at once has a tonic too
+  let together = n ? `${Math.round(fundHz)} Hz · ${n}` : "—";
+  if (oscA && oscB) {
+    const iv = intervalName(Math.min(toneAHz, toneBHz), Math.max(toneAHz, toneBHz));
+    if (iv) together += ` · A+B ${iv}`;
+  }
+  $("v-note").textContent = together;
+  const w = harmCv.width, h = harmCv.height;
+  harmCtx.fillStyle = "#0d0d10";
+  harmCtx.fillRect(0, 0, w, h);
+  const cols = 10, cw = w / cols;
+  for (let k = 0; k < cols; k++) {
+    const v = harmBars[k] || 0;
+    const bh = Math.max(1, v * (h - 6));
+    harmCtx.fillStyle = k === 0 ? "#a78fd0" : `rgba(207,204,196,${(0.35 + 0.65 * v).toFixed(2)})`;
+    harmCtx.fillRect(k * cw + 1.5, h - 3 - bh, cw - 3, bh);
+  }
+}
+
+let raf = null;
+function loop() {
+  window.__loopTick = (window.__loopTick || 0) + 1;
+  try {
+    if (W < 2) resize();          // recover once the tab actually has a size
+    if (W < 2) { raf = requestAnimationFrame(loop); return; }
+    step(); render();
+    drawTone();
+    drawAnalyser();
+    $("status").textContent = AC
+      ? `mode ${modes.map((md) => `${md.m},${md.n}`).join(" + ")} · drive ${(drive * 100).toFixed(0)} · ${activeCount.toLocaleString()} grains`
+      : "silent — begin to close the loop";
+  } catch (err) {
+    $("status").textContent = `error: ${err.message}`;
+    return; // stop the RAF chain visibly rather than silently
+  }
+  if (!reduced) raf = requestAnimationFrame(loop);
+}
+
+/* pointer = the audience's hand */
+function toPlate(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+}
+/* Drawing on the plate. Grains are a fixed population, so "adding" charcoal
+   means recruiting grains from elsewhere to where the hand is; "sweeping" means
+   pushing the ones already there. Neither invents matter — the plate holds what
+   it holds, which is why the count stays honest. */
+function handDraw(px0, py0, dx, dy) {
+  if (brushMode === 0) return;                       // shake only: handAmp does it
+  const r2 = brushR * brushR;
+  let moved = 0;
+  const want = brushMode === 1 ? 260 : 0;
+  for (let i = 0; i < activeCount && moved < 900; i++) {
+    const ex = px[i] - px0, ey = py[i] - py0;
+    const d2 = ex * ex + ey * ey;
+    if (d2 < r2) {
+      // already under the hand — carry it along with the stroke
+      px[i] += dx * 0.85; py[i] += dy * 0.85;
+      vx[i] = dx * 0.5; vy[i] = dy * 0.5;
+      moved++;
+    }
+  }
+  if (want) {
+    // recruit stragglers from the far side of the plate into the stroke
+    let taken = 0;
+    for (let i = (Math.random() * activeCount) | 0; taken < want && i < activeCount; i += 7) {
+      const ex = px[i] - px0, ey = py[i] - py0;
+      if (ex * ex + ey * ey > r2 * 9) {
+        const a = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random()) * brushR;
+        px[i] = px0 + Math.cos(a) * rr;
+        py[i] = py0 + Math.sin(a) * rr;
+        vx[i] = dx * 0.4; vy[i] = dy * 0.4;
+        taken++;
+      }
+    }
+  }
+}
+canvas.addEventListener("pointerdown", (e) => {
+  if (mode3d) { orbiting = { x: e.clientX, y: e.clientY }; try { canvas.setPointerCapture(e.pointerId); } catch {} return; }
+  const pt = toPlate(e);
+  pointers.set(e.pointerId, pt); try { canvas.setPointerCapture(e.pointerId); } catch {}
+  handDraw(pt.x, pt.y, 0, 0);
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (mode3d && orbiting) {
+    yaw += (e.clientX - orbiting.x) * 0.008;
+    pitchAng = Math.min(1.45, Math.max(0.12, pitchAng + (e.clientY - orbiting.y) * 0.006));
+    orbiting = { x: e.clientX, y: e.clientY };
+    return;
+  }
+  if (pointers.has(e.pointerId)) {
+    const was = pointers.get(e.pointerId), now = toPlate(e);
+    pointers.set(e.pointerId, now);
+    handDraw(now.x, now.y, now.x - was.x, now.y - was.y);
+  }
+});
+canvas.addEventListener("pointerup", (e) => { orbiting = null; pointers.delete(e.pointerId); });
+canvas.addEventListener("pointercancel", (e) => { orbiting = null; pointers.delete(e.pointerId); });
+canvas.addEventListener("wheel", (e) => {
+  if (!mode3d) return;
+  e.preventDefault();
+  camD = Math.min(3, Math.max(1.15, camD + e.deltaY * 0.002));
+}, { passive: false });
+
+/* freeze + export */
+$("freeze").addEventListener("click", () => {
+  frozen = !frozen;
+  $("freeze").textContent = frozen ? "Unfreeze" : "Freeze";
+  $("freeze").classList.toggle("armed", frozen);
+});
+
+/* three views of one signal: flat plate → plate in space → the signal across time */
+const VIEW_NAMES = ["2D plate", "3D plate — drag to orbit", "Scope — the signal in time", "Fractal — the sound as a set"];
+$("dim").addEventListener("click", () => {
+  viewMode = (viewMode + 1) % 4;
+  mode3d = viewMode === 1 || viewMode === 2; // orbit lives in the 3D views
+  $("dim").textContent = `View: ${VIEW_NAMES[viewMode]}`;
+  $("dim").classList.toggle("armed", viewMode !== 0);
+  pointers.clear();
+  orbiting = null;
+});
+$("m-3d").addEventListener("click", () => $("dim").click());
+
+/* the channel strips: gain, drive, delay, reverb and ink, per channel */
+for (let c = 0; c < 4; c++) {
+  const bind = (id, fn, fmt) => {
+    const el = $(id + c);
+    if (!el) return;                       // the source has no delay or reverb strip
+    el.addEventListener("input", (e) => {
+      const v = +e.target.value;
+      $("v-" + id + c).textContent = fmt(v);
+      if (AC && CH[c]) fn(CH[c], v);
+    });
+  };
+  bind("g", (ch, v) => ch.inG.gain.setTargetAtTime(v, AC.currentTime, 0.03), (v) => v.toFixed(2));
+  bind("d", (ch, v) => setChanDrive(ch, v), (v) => v.toFixed(1));
+  bind("dl", (ch, v) => ch.dlWet.gain.setTargetAtTime(v, AC.currentTime, 0.05), (v) => v.toFixed(2));
+  bind("rv", (ch, v) => ch.rvWet.gain.setTargetAtTime(v, AC.currentTime, 0.05), (v) => v.toFixed(2));
+  bind("s", (ch, v) => ch.send.gain.setTargetAtTime(v, AC.currentTime, 0.05), (v) => v.toFixed(2));
+  $("c" + c).addEventListener("input", (e) => {
+    $("v-c" + c).textContent = e.target.value;
+    if (CH[c]) CH[c].colour = hexToRgb(e.target.value);
+  });
+}
+// fold a channel away, Ableton-style; the header keeps showing its reading
+document.querySelectorAll(".chan-fold").forEach((b) => {
+  b.addEventListener("click", () => {
+    const body = $("body-" + b.dataset.fold);
+    body.classList.toggle("folded");
+    b.textContent = body.classList.contains("folded") ? "▸" : "▾";
+  });
+});
+
+/* the loop can step out of the circuit: play the tones or the room alone */
+let bypassed = true;   // Qālā opens in silence — nothing sounds until asked
+/* solo — hear (and see) one channel, or any pair, or all of them */
+function applySolo() {
+  if (!AC || !CH.length) return;
+  const any = CH.some((c) => c.solo);
+  CH.forEach((c, i) => {
+    c.out.gain.setTargetAtTime(!any || c.solo ? 1 : 0, AC.currentTime, 0.02);
+    const b = document.querySelector(`[data-solo="${i}"]`);
+    if (b) b.classList.toggle("armed", !!c.solo);
+  });
+}
+document.querySelectorAll("[data-solo]").forEach((b) =>
+  b.addEventListener("click", () => {
+    if (!AC) { $("status").textContent = "begin the process first"; return; }
+    const i = +b.dataset.solo;
+    CH[i].solo = !CH[i].solo;
+    applySolo();
+    const on = CH.filter((c) => c.solo).map((c) => c.name);
+    $("status").textContent = on.length ? `hearing only ${on.join(" + ")}` : "hearing everything again";
+  }));
+
+function setBypass(on) {
+  bypassed = on;
+  if (!on) wakeAudio();
+  if (!nodes || !AC) return;
+  const now = AC.currentTime;
+  nodes.loopAmt.gain.setTargetAtTime(on ? 0 : +$("amt").value, now, 0.05);
+  // Silencing the fader alone leaves it self-oscillating behind a closed door:
+  // fbGain > 1 means the loop breeds forever, so the plate never sees real
+  // silence. Cut the feedback and its seed too — switched on again it has to
+  // bloom from nothing, the way the real desk does.
+  nodes.fbGain.gain.setTargetAtTime(on ? 0 : +$("fb").value, now, 0.05);
+  nodes.seedGain.gain.setTargetAtTime(on ? 0 : 1, now, 0.05);
+}
+function loopUI() {
+  $("bypass").textContent = `Loop: ${bypassed ? "bypassed" : "in circuit"}`;
+  $("bypass").classList.toggle("armed", bypassed);
+  const p = $("loopPower");
+  if (p) {
+    p.textContent = bypassed ? "off" : "on";
+    p.classList.toggle("armed", !bypassed);
+    p.setAttribute("aria-pressed", String(!bypassed));
+  }
+}
+if ($("loopPower")) $("loopPower").addEventListener("click", () => {
+  setBypass(!bypassed);
+  loopUI();
+  $("status").textContent = bypassed
+    ? "mixer off — you hear the tones and the room straight through"
+    : "mixer on — the circuit feeds back on itself again";
+});
+$("bypass").addEventListener("click", () => {
+  setBypass(!bypassed);
+  loopUI();
+});
+
+/* the plate's state of matter */
+$("phase").addEventListener("click", () => {
+  const i = (PHASE_ORDER.indexOf(phaseName) + 1) % PHASE_ORDER.length;
+  phaseName = PHASE_ORDER[i];
+  phase = PHASES[phaseName];
+  $("phase").textContent = `State: ${phaseName}`;
+  $("phase").classList.toggle("armed", phaseName !== "solid");
+});
+
+/* where the picture lives: on the grains, or under them */
+$("imgMode").addEventListener("click", () => {
+  imgAsBg = !imgAsBg;
+  imgBufReady = false;
+  $("imgMode").textContent = `Image as: ${imgAsBg ? "background" : "grains"}`;
+  $("imgMode").classList.toggle("armed", imgAsBg);
+});
+
+/* what the scope listens to: one wave alone, or all of them interfering */
+const SCOPE_SOURCES = [["mix", "mix"], ["toneA", "tone A"], ["toneB", "tone B"], ["mic", "mic"], ["loop", "loop"]];
+let scopeSrcIdx = 0;
+$("scopeSrc").addEventListener("click", () => {
+  scopeSrcIdx = (scopeSrcIdx + 1) % SCOPE_SOURCES.length;
+  scopeSource = SCOPE_SOURCES[scopeSrcIdx][0];
+  $("scopeSrc").textContent = `Scope: ${SCOPE_SOURCES[scopeSrcIdx][1]}`;
+  $("scopeSrc").classList.toggle("armed", scopeSource !== "mix");
+});
+
+/* ================================================================
+   PRINT — take the pattern off the screen at a size worth printing.
+
+   The grains live at normalised coordinates, so this is a re-render,
+   never an upscale: the same grains are laid down again into a much
+   larger buffer while you play. The print is a LONG EXPOSURE — the
+   whole take accumulates into one still, which is what a print is.
+   ================================================================ */
+const PRINT_SIZES = [
+  // face prints — the figure sits on the sheet, with its rim
+  { id: "p12",  label: '12″ × 12″ print',   w: 3600, h: 3600, plate: 3400 },
+  { id: "p16",  label: '16″ × 16″ print',   w: 4800, h: 4800, plate: 4560 },
+  { id: "tee",  label: '12″ × 16″ apparel', w: 3600, h: 4800, plate: 3400 },
+  // 360° — no rim, no edge: the pattern meets itself and repeats forever
+  { id: "tile", label: 'seamless tile 12″', w: 3600, h: 3600, plate: 3600, seam: true },
+  { id: "wrap", label: '360° wrap · mug',   w: 2475, h: 1155, plate: 2400, seam: true, panel: true },
+  { id: "aop",  label: '360° all-over tee', w: 5400, h: 5400, plate: 2700, seam: true, panel: true },
+];
+let printIdx = 0, printInk = 0;                 // ink: 0 = as shown, 1 = inverted
+let pBuf = null, pSide = 0, pGs = 1, pFrames = 0;
+
+function printArm() {
+  const S = PRINT_SIZES[printIdx].plate;
+  try {
+    pBuf = new Uint8ClampedArray(S * S * 4);
+  } catch (e) {
+    $("status").textContent = "not enough memory for that size — try 12″";
+    pBuf = null; return false;
+  }
+  pSide = S;
+  pGs = Math.max(1, Math.round(grainSize * S / Math.max(1, glSide)));
+  pFrames = 0;
+  return true;
+}
+function printDisarm() { pBuf = null; pSide = 0; pFrames = 0; }
+
+/* the patch, small enough to ride along inside the PNG — and, later,
+   inside a ring of marks on the print itself, so the image can be
+   played back. See listen.html. */
+function patchCode() {
+  const s = {
+    v: 1,
+    a: oscA ? Math.round(toneAHz) : 0,
+    b: oscB ? Math.round(toneBHz) : 0,
+    mic: !!micStream,
+    mat: materialName, ph: phaseName, cor: corners,
+    md: modes.map((m) => [m.m, m.n, +m.w.toFixed(2)]),
+    bal: +balance.toFixed(2), foc: +focus.toFixed(2),
+    gs: grainSize, tr: +trail.toFixed(2), pa: +paintAlpha.toFixed(2),
+    wp: +warp.toFixed(2), br: +brush.toFixed(2), pal: paletteName, tile: tileMode, f0: plateHz, mo: +morphSec.toFixed(2), cp: +couple.toFixed(2), be: +beatAmt.toFixed(2),
+    solo: CH.map((c) => !!c.solo), loop: !bypassed,
+    n: activeCount, t: Date.now(),
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(s))));
+}
+
+/* ---- write the patch into the PNG as a tEXt chunk (keyword "qala") ---- */
+const CRC_T = (() => {
+  const t = new Int32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (let i = 0; i < bytes.length; i++) c = CRC_T[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function pngWithText(buf, keyword, text) {
+  const src = new Uint8Array(buf);
+  // PNG = 8-byte signature, then IHDR (4 len + 4 type + 13 data + 4 crc = 25)
+  const insertAt = 8 + 25;
+  const kw = new TextEncoder().encode(keyword);
+  const tx = Uint8Array.from(text, (ch) => ch.charCodeAt(0) & 0xff); // base64 is latin-1 safe
+  const data = new Uint8Array(kw.length + 1 + tx.length);
+  data.set(kw, 0); data[kw.length] = 0; data.set(tx, kw.length + 1);
+  const chunk = new Uint8Array(12 + data.length);
+  const dv = new DataView(chunk.buffer);
+  dv.setUint32(0, data.length);
+  chunk.set([0x74, 0x45, 0x58, 0x74], 4);              // "tEXt"
+  chunk.set(data, 8);
+  dv.setUint32(8 + data.length, crc32(chunk.subarray(4, 8 + data.length)));
+  const out = new Uint8Array(src.length + chunk.length);
+  out.set(src.subarray(0, insertAt), 0);
+  out.set(chunk, insertAt);
+  out.set(src.subarray(insertAt), insertAt + chunk.length);
+  return out;
+}
+
+function printCompose() {
+  const size = PRINT_SIZES[printIdx];
+  const out = document.createElement("canvas");
+  out.width = size.w; out.height = size.h;
+  const c = out.getContext("2d");
+
+  const inverted = printInk === 1;
+  const bg = inverted ? invertHex(palette.bg) : palette.bg;
+  c.fillStyle = bg; c.fillRect(0, 0, size.w, size.h);
+
+  if (pBuf) {
+    // the grain layer, at print resolution
+    const layer = document.createElement("canvas");
+    layer.width = layer.height = pSide;
+    const img = new ImageData(pSide, pSide);
+    if (inverted) {
+      const s = pBuf, d = img.data;
+      for (let i = 0; i < s.length; i += 4) {
+        d[i] = 255 - s[i]; d[i + 1] = 255 - s[i + 1]; d[i + 2] = 255 - s[i + 2]; d[i + 3] = s[i + 3];
+      }
+    } else {
+      img.data.set(pBuf);
+    }
+    layer.getContext("2d").putImageData(img, 0, 0);
+    if (size.panel) {
+      // a whole number of tiles across, so the left and right edges of the
+      // panel are the same edge — that is what makes it wrap
+      // repeat at the buffer's own resolution rather than stretching one tile,
+      // rounded so a whole number fits across
+      const reps = Math.max(1, Math.round(size.w / pSide));
+      const tw = size.w / reps, rows = Math.ceil(size.h / tw);
+      for (let ry = 0; ry < rows; ry++)
+        for (let rx = 0; rx < reps; rx++) c.drawImage(layer, rx * tw, ry * tw, tw, tw);
+    } else if (size.seam) {
+      c.drawImage(layer, 0, 0, size.w, size.h);   // one tile, edge to edge
+    } else {
+      c.drawImage(layer, (size.w - pSide) / 2, (size.h - pSide) / 2);
+    }
+  }
+  return out;
+}
+function invertHex(h) {
+  const [r, g, b] = hexToRgb(h);
+  return `rgb(${255 - r},${255 - g},${255 - b})`;
+}
+
+function printSave() {
+  if (!pBuf) { $("status").textContent = "nothing captured yet — arm the print first"; return; }
+  const code = patchCode();
+  const out = printCompose();
+  const size = PRINT_SIZES[printIdx];
+  $("status").textContent = "writing the file…";
+  out.toBlob(async (blob) => {
+    const withCode = pngWithText(await blob.arrayBuffer(), "qala", code);
+    const url = URL.createObjectURL(new Blob([withCode], { type: "image/png" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `qala-${size.id}-${Date.now()}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
+    $("status").textContent = `saved · ${size.w}×${size.h} · 300 dpi · patch embedded`;
+  }, "image/png");
+}
+
+/* ---- controls ---- */
+function setSeamless(on) {
+  tileMode = on;
+  $("pseam").textContent = on ? "Seamless: 360°" : "Seamless: off";
+  $("pseam").classList.toggle("armed", on);
+  if (pBuf) printArm();                       // the pattern changes — start again
+}
+$("pseam").addEventListener("click", () => {
+  const on = !tileMode;
+  setSeamless(on);
+  // a face size can't hold a seamless pattern, and a seam size can't hold a rim
+  if (on && !PRINT_SIZES[printIdx].seam) printIdx = PRINT_SIZES.findIndex((s) => s.seam);
+  if (!on && PRINT_SIZES[printIdx].seam) printIdx = 0;
+  $("psize").textContent = PRINT_SIZES[printIdx].label;
+  $("status").textContent = on
+    ? "seamless — the plate has no edge now; the pattern repeats forever"
+    : "back to a plate with a rim";
+});
+$("psize").addEventListener("click", () => {
+  printIdx = (printIdx + 1) % PRINT_SIZES.length;
+  $("psize").textContent = PRINT_SIZES[printIdx].label;
+  setSeamless(!!PRINT_SIZES[printIdx].seam);  // the size decides the pattern
+  if (pBuf) { printArm(); $("status").textContent = "size changed — capture restarted"; }
+});
+$("pink").addEventListener("click", () => {
+  printInk = printInk ? 0 : 1;
+  $("pink").textContent = printInk ? "Ink: inverted" : "Ink: as shown";
+});
+$("parm").addEventListener("click", () => {
+  if (pBuf) {
+    printDisarm();
+    $("parm").textContent = "Capture for print ○";
+    $("parm").classList.remove("armed");
+    $("status").textContent = "capture stopped";
+  } else if (printArm()) {
+    $("parm").textContent = "Capturing ●";
+    $("parm").classList.add("armed");
+    $("status").textContent = "capturing — play, and the whole take draws into one print";
+  }
+});
+$("export").addEventListener("click", printSave);
+
+/* the patch surface — the scanner in listen.html reads what this writes,
+   and it is what makes a saved image playable again. */
+window.QALA = {
+  patch: () => patchCode(),
+  decode: (code) => JSON.parse(decodeURIComponent(escape(atob(code)))),
+  /* pull the patch back out of a PNG this instrument saved */
+  readPNG(buf) {
+    const b = new Uint8Array(buf), dv = new DataView(b.buffer);
+    let o = 8;
+    while (o < b.length - 8) {
+      const len = dv.getUint32(o);
+      const type = String.fromCharCode(b[o + 4], b[o + 5], b[o + 6], b[o + 7]);
+      if (type === "tEXt") {
+        const d = b.subarray(o + 8, o + 8 + len);
+        const z = d.indexOf(0);
+        if (String.fromCharCode(...d.subarray(0, z)) === "qala")
+          return this.decode(String.fromCharCode(...d.subarray(z + 1)));
+      }
+      if (type === "IEND") break;
+      o += 12 + len;
+    }
+    return null;
+  },
+  _t: { printArm, printCompose, pngWithText, frames: () => pFrames, buf: () => pBuf,
+        drive: () => drive, lowE: () => lowE, highE: () => highE,
+        acState: () => (AC ? AC.state : null), sounding: () => anythingSounding(),
+        near: (cx, cy, r) => { let n = 0; const r2 = r * r;
+          for (let i = 0; i < activeCount; i++) {
+            const ex = px[i] - cx, ey = py[i] - cy;
+            if (ex * ex + ey * ey < r2) n++;
+          } return n; },
+        draw: (x, y, dx, dy) => handDraw(x, y, dx, dy),
+        /* the true output peak — no smoothing, no averaging. If this is 0 the
+           page is emitting digital silence and any hum is the machine's own. */
+        peak: () => {
+          if (!analyser) return null;
+          const b = new Float32Array(analyser.fftSize);
+          analyser.getFloatTimeDomainData(b);
+          let mx = 0;
+          for (let i = 0; i < b.length; i++) { const a = Math.abs(b[i]); if (a > mx) mx = a; }
+          return mx;
+        },
+        /* where the grains actually are — the honest test of stillness, since
+           the trail keeps fading pixels long after the dust has stopped */
+        posHash: () => { let h = 0;
+          for (let i = 0; i < activeCount; i += 97)
+            h = (Math.imul(h, 31) + ((px[i] * 1e6) | 0) + ((py[i] * 1e6) | 0)) | 0;
+          return h; },
+        ghosts: () => ghosts.length,
+        modes: () => modes.map((m) => ({ m: m.m, n: m.n, w: +(m.w || 0).toFixed(3), hz: Math.round(m.hz || 0), bw: +(m.bw === undefined ? 1 : m.bw).toFixed(3) })),
+        chan: () => CH.map((c) => ({ name: c.name, active: c.active, solo: !!c.solo, energy: +c.energy.toFixed(4) })) },
+};
+
+/* tone channels — sine voices switched into the loop; each becomes a plate mode */
+function toneToggle(btnId, getOsc, setOsc, getGain, setGain, hz) {
+  wakeAudio();
+  if (!AC) { $("status").textContent = "begin the process first — then add tones"; return; }
+  const osc = getOsc();
+  if (osc) {
+    osc.stop(); osc.disconnect(); getGain().disconnect();
+    setOsc(null); setGain(null);
+    CH[btnId === "toneA" ? 0 : 1].active = false;
+    $(btnId).textContent = $(btnId).textContent.replace(": on", ": off");
+    $(btnId).classList.remove("armed");
+    return;
+  }
+  const o = AC.createOscillator(); o.type = "sine"; o.frequency.value = hz();
+  const g = AC.createGain(); g.gain.value = 1;
+  const ci = btnId === "toneA" ? 0 : 1;
+  o.connect(g).connect(CH[ci].inG); o.start();
+  CH[ci].active = true;
+  setOsc(o); setGain(g);
+  $(btnId).classList.add("armed");
+}
+$("toneA").addEventListener("click", () =>
+  toneToggle("toneA", () => oscA, (v) => (oscA = v), () => oscAGain, (v) => (oscAGain = v), () => toneAHz));
+$("toneB").addEventListener("click", () =>
+  toneToggle("toneB", () => oscB, (v) => (oscB = v), () => oscBGain, (v) => (oscBGain = v), () => toneBHz));
+$("fqa").addEventListener("input", (e) => {
+  toneAHz = +e.target.value;
+  if (oscA) oscA.frequency.setTargetAtTime(toneAHz, AC.currentTime, 0.03);
+  $("v-fqa").textContent = `${toneAHz} Hz · ${noteName(toneAHz)}`;
+});
+$("fqb").addEventListener("input", (e) => {
+  toneBHz = +e.target.value;
+  if (oscB) oscB.frequency.setTargetAtTime(toneBHz, AC.currentTime, 0.03);
+  $("v-fqb").textContent = `${toneBHz} Hz · ${noteName(toneBHz)}`;
+});
+
+/* ---------- genesis: the process, performed by the user ---------- */
+function setSlider(id, v) { const el = $(id); el.value = v; el.dispatchEvent(new Event("input")); }
+const GENESIS = [
+  { cap: "the plate is still, and nothing is sounding. let it hear you →", act: () => { genesisLine = false; viewMode = 0; mode3d = false; } },
+  { cap: "speak, sing, clap — the plate is listening to you", act: () => { if (!micStream) toggleMic(); } },
+  { cap: "your voice has a pitch, and the pitch has a shape", act: () => { genesisLine = true; lineCount = 3; } },
+  { cap: "add a tone of your own", act: () => { lineCount = 1; if (!oscA) $("toneA").click(); } },
+  { cap: "a second — two waves, and the space between them", act: () => { lineCount = 2; if (!oscB) $("toneB").click(); setSlider("fqb", 330); } },
+  // the mixer sleeps until here — this is the step that wakes it
+  { cap: "a fourth — the loop feeding on itself", act: () => { lineCount = 4; setBypass(false); loopUI(); setSlider("amt", 1); setSlider("fb", 1.02); } },
+  { cap: "they overlap — and the overlap has a shape", act: () => { genesisLine = false; viewMode = 2; mode3d = true; } },
+  { cap: "time bends them — the LFO sweeps the colour", act: () => { setSlider("lfod", 260); setSlider("lfor", 0.35); } },
+  { cap: "overtones — bass · mid · treble, mixed", act: () => { setSlider("bnd-lo", 1.25); setSlider("bnd-hi", 1.15); } },
+  { cap: "grain and dirt", act: () => { setSlider("drv", 9); } },
+  { cap: "the image enters — allow the camera, or add a picture later", act: () => { if (!camStream) $("cam").click(); } },
+  { cap: "matter — the plate. touch it, cycle its views. this is Qālā", act: () => { viewMode = 0; mode3d = false; $("dim").textContent = "View: 2D plate"; $("dim").classList.remove("armed"); } },
+];
+function genesisShow() {
+  $("gen-cap").textContent = GENESIS[genesisStage].cap;
+  $("gen-add").textContent =
+    genesisStage >= GENESIS.length - 1 ? "open the desk"
+    : genesisStage === 0 ? "open the microphone"
+    : "+ add";
+}
+function genesisStart() {
+  document.body.classList.add("genesis");
+  genesisStage = 0;
+  GENESIS[0].act();
+  genesisShow();
+  setTimeout(resize, 80);
+}
+function genesisEnd() {
+  document.body.classList.remove("genesis");
+  genesisLine = false;
+  genesisStage = -1;
+  try { localStorage.setItem("adva-genesis-done", "1"); } catch {}
+  setTimeout(resize, 80);
+}
+$("gen-add").addEventListener("click", () => {
+  if (genesisStage >= GENESIS.length - 1) { genesisEnd(); return; }
+  genesisStage += 1;
+  GENESIS[genesisStage].act();
+  genesisShow();
+});
+$("gen-skip").addEventListener("click", genesisEnd);
+
+/* begin */
+$("begin").addEventListener("click", () => {
+  buildMixer();
+  $("overlay").classList.add("hidden");
+  // the room first: the quickest possible answer to "what does this do?"
+  setSlider("amt", 0.12);          // where the loop will sit once it is woken
+  setSlider("g2", 0.9);            // the mic channel is open, but no mic in it yet
+  setSlider("energy", 1.2);
+  // nothing sounds. The first step asks for the microphone; until then the
+  // plate is still, which is the whole point of the opening.
+  $("status").textContent = "silent — nothing is sounding yet";
+  let done = false;
+  try { done = localStorage.getItem("adva-genesis-done") === "1"; } catch {}
+  if (!done) genesisStart();
+  if (reduced) { step(); for (let i = 0; i < 400; i++) step(); render(); }
+});
+
+// reflect the adaptive default grain count in the bar (state exists by now)
+$("count").value = activeCount;
+$("v-count").textContent = activeCount.toLocaleString();
+
+resize(); seed();
+if (!reduced) loop(); else { for (let i = 0; i < 400; i++) step(); render(); }
+</script>
+</body>
+</html>
