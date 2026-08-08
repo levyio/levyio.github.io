@@ -63,8 +63,12 @@
   }
   @media (max-width: 720px) {
     body { overflow: auto; }
-    main { grid-template-columns: 1fr; grid-template-rows: 62vh auto; }
+    /* the plate still leads, but the desk gets enough room to be usable —
+       62vh left only ~300px for dozens of controls */
+    main { grid-template-columns: 1fr; grid-template-rows: 52vh auto; }
+    aside { padding-bottom: 3rem; }
   }
+
   .plate-wrap {
     position: relative;
     background: var(--black);
@@ -258,6 +262,25 @@
   .note { font-size: 0.78rem; color: var(--ash); line-height: 1.5; }
   .note em { color: var(--text); font-style: italic; }
   hr { border: none; border-top: 1px solid var(--line); }
+
+  /* A finger is about 44px across; a 10px thumb is a quarter of one. On touch
+     the whole strip becomes the target: taller track, thumb you can actually
+     catch, and room between rows so you do not grab the wrong slider.
+     This must sit last — the base slider rules come later in the sheet and
+     would otherwise win on equal specificity. */
+  @media (pointer: coarse) {
+    /* The element grows to a finger; the LINE stays a hairline. Making the
+       input itself 26px tall would paint a 26px bar, so the background moves
+       to the track and the thumb is pulled back up to sit on it. */
+    input[type="range"] { height: 28px; margin: 0; background: transparent; }
+    input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--line); }
+    input[type="range"]::-moz-range-track { height: 2px; background: var(--line); }
+    input[type="range"]::-webkit-slider-thumb { width: 20px; height: 26px; margin-top: -12px; }
+    input[type="range"]::-moz-range-thumb { width: 20px; height: 26px; }
+    .strip { margin-bottom: 0.5rem; }
+    button, .chan-on, .chan-fold { min-height: 34px; }
+    select { min-height: 34px; }
+  }
 </style>
 </head>
 <body>
@@ -1597,7 +1620,7 @@ function step() {
   if (N > 1) {
     let spread = 0;
     for (let k = 1; k < N; k++) spread = Math.max(spread, Math.abs((modes[k].hz || 0) - (modes[0].hz || 0)));
-    beatPh = (beatPh + Math.min(6, spread) * beatAmt * dtS * Math.PI * 2) % (Math.PI * 2);
+    if (drive > 0.01) beatPh = (beatPh + Math.min(6, spread) * beatAmt * dtS * Math.PI * 2) % (Math.PI * 2);
     let s = 0;
     for (let k = 0; k < N; k++) { modes[k].bw = 1 + Math.cos(beatPh + (k * 2 * Math.PI) / N); s += modes[k].bw; }
     const norm = s > 1e-6 ? N / s : 1;
