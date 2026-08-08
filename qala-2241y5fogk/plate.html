@@ -594,6 +594,18 @@
       <input type="range" id="surf" min="10" max="400" step="5" value="60" aria-label="How far the 3D surface's real frequency is slowed to be watchable" />
     </div>
     <div class="strip">
+      <div class="strip-head"><span class="mono">Time · spin</span><span class="mono val" id="v-tspin">0.20</span></div>
+      <input type="range" id="tspin" min="0" max="1.5" step="0.01" value="0.2" aria-label="How fast the time view winds around its axis" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Time · orbit</span><span class="mono val" id="v-torbit">0.55</span></div>
+      <input type="range" id="torbit" min="0" max="1.6" step="0.01" value="0.55" aria-label="How far the plate swings from the time axis" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Time · depth</span><span class="mono val" id="v-tdepth">1.00</span></div>
+      <input type="range" id="tdepth" min="0.15" max="3" step="0.05" value="1" aria-label="How far apart the moments sit along the time axis" />
+    </div>
+    <div class="strip">
       <div class="strip-head"><span class="mono">Settle</span><span class="mono val" id="v-settle">600 ms</span></div>
       <input type="range" id="settle" min="0" max="2500" step="50" value="600" aria-label="How long a figure is held before it may change" />
     </div>
@@ -1170,6 +1182,9 @@ const plateBars = [
   ["plate", "v-plate", (v) => { plateHz = +v; return `${Math.round(v)} Hz`; }],
   ["surf", "v-surf", (v) => { surfDiv = +v; const f = modes[0] && modes[0].hz;
     return f ? `÷${v} · ${(f / v).toFixed(1)} Hz seen` : `÷${v}`; }],
+  ["tspin", "v-tspin", (v) => { timeSpin = +v; return (+v).toFixed(2); }],
+  ["torbit", "v-torbit", (v) => { timeOrbit = +v; return (+v).toFixed(2); }],
+  ["tdepth", "v-tdepth", (v) => { timeDepth = +v; return (+v).toFixed(2); }],
   ["settle", "v-settle", (v) => { settleMs = +v; return `${v} ms`; }],
   ["morph", "v-morph", (v) => { morphSec = +v; return `${(+v).toFixed(2)} s`; }],
   ["couple", "v-couple", (v) => { couple = +v; return (+v).toFixed(2); }],
@@ -1569,6 +1584,85 @@ function modeForHz(hz) {
   return [Math.min(MODE_MAX, bm + patternAdd), Math.min(MODE_MAX, bn + patternAdd)];
 }
 
+/* ── TIME: the plate's history as a body in space ──────────────────────────
+   Every so often a shell is taken — a thin sample of where the grains are just
+   then — and stacked behind the ones before it. Time is the axis: a straight
+   constant the whole thing recedes along. The sound is what turns it, each
+   shell laid down at the angle the tone had reached, so a steady note winds a
+   smooth helix and a moving one wanders. Freeze stops new shells and leaves the
+   structure standing, which is the way to look at a figure as a solid: still
+   particles, held in their positional relation. */
+const TSHELLS = 56, TSHELL_N = 900;
+const tsX = new Float32Array(TSHELLS * TSHELL_N);
+const tsY = new Float32Array(TSHELLS * TSHELL_N);
+const tsC = new Uint8Array(TSHELLS * TSHELL_N * 3);
+const tsAngOf = new Float32Array(TSHELLS);
+let tsHead = 0, tsCount = 0, tsAng = 0, tsPushT = -1e9;
+let timeSpin = 0.2, timeDepth = 1, timeOrbit = 0.55, timeScaleS = 0.5;
+
+function timePush() {
+  const base = tsHead * TSHELL_N;
+  for (let k = 0; k < TSHELL_N; k++) {
+    const i = (Math.random() * activeCount) | 0;
+    tsX[base + k] = px[i] - 0.5;
+    tsY[base + k] = py[i] - 0.5;
+    const mc = (CH.length && chanOf) ? CH[chanOf[i]] : null;
+    const cc = (mc && mc.active && mc.energy > 0.2) ? mc.colour : grainRGB;
+    const o = (base + k) * 3;
+    tsC[o] = cc[0]; tsC[o + 1] = cc[1]; tsC[o + 2] = cc[2];
+  }
+  tsAngOf[tsHead] = tsAng;
+  tsHead = (tsHead + 1) % TSHELLS;
+  if (tsCount < TSHELLS) tsCount++;
+}
+
+function renderTime() {
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(0, 0, W, H);
+  if (!glImg) return;
+  const d = glImg.data;
+  d.fill(0);                                   // a body, not a smear
+  const cyw = Math.cos(yaw), syw = Math.sin(yaw);
+  const cp = Math.cos(pitchAng), sp = Math.sin(pitchAng);
+  const fl = 1.35, K = 0.82, gap = 0.055 * timeDepth;
+
+  for (let s = 0; s < tsCount; s++) {
+    // oldest first, so nearer shells paint over farther ones
+    const age = tsCount - 1 - s;
+    const idx = ((tsHead - 1 - age) % TSHELLS + TSHELLS) % TSHELLS;
+    const th = tsAngOf[idx];
+    const ca = Math.cos(th), sa = Math.sin(th);
+    const z = -age * gap;
+    const fade = 1 - age / TSHELLS;
+    const A = (paintAlpha * 255 * fade * fade) | 0;
+    if (A < 4) continue;
+    const base = idx * TSHELL_N;
+    for (let k = 0; k < TSHELL_N; k++) {
+      const x0 = tsX[base + k], y0 = tsY[base + k];
+      // The shell ORBITS the time axis rather than spinning about its own
+      // centre — turning a symmetric cloud on the spot looks identical at every
+      // angle, which drew a slab instead of a spiral. Carried out to a radius,
+      // the same rotation becomes a galaxy arm.
+      const wx = x0 * timeScaleS + ca * timeOrbit;
+      const wy = y0 * timeScaleS + sa * timeOrbit;
+      const X1 = wx * cyw + z * syw;                          // camera yaw
+      const Z1 = -wx * syw + z * cyw;
+      const Y2 = wy * cp - Z1 * sp;                           // camera pitch
+      const Z2 = wy * sp + Z1 * cp;
+      const denom = camD + Z2;
+      if (denom < 0.08) continue;
+      const sc = fl / denom;
+      const u = 0.5 + X1 * sc * K, v = 0.5 + Y2 * sc * K;
+      if (u < 0.001 || v < 0.001 || u > 0.999 || v > 0.999) continue;
+      const o = (base + k) * 3;
+      splat(d, u, v, grainSize, tsC[o], tsC[o + 1], tsC[o + 2], A);
+    }
+  }
+  grainCtx.putImageData(glImg, 0, 0);
+  ctx.drawImage(grainCanvas, 0, 0, W, H);
+}
+
 /* Chladni amplitude for a square plate — sum of the superposed modes */
 function fieldA(x, y) {
   let a = 0;
@@ -1634,6 +1728,11 @@ function step() {
   // stopped in silence.
   const fSurf = modes.length ? (modes[0].hz || 0) : 0;
   if (drive > 0.01 && fSurf > 0) surfPh += (fSurf / Math.max(1, surfDiv)) * dtS * Math.PI * 2;
+  // the galaxy turns at the same rate the surface flaps, so the two views agree
+  if (viewMode === 4 && !frozen && drive > 0.01) {
+    if (fSurf > 0) tsAng += (fSurf / Math.max(1, surfDiv)) * dtS * Math.PI * 2 * timeSpin;
+    if (simT - tsPushT > 55) { tsPushT = simT; timePush(); }
+  }
   // audio → mode (spectral peak) + drive (time-domain RMS — honest loudness)
   if (analyser) {
     analyser.getByteFrequencyData(freq);
@@ -2114,7 +2213,11 @@ function renderFractal() {
       const u = ((px[i] - 0.5) * S + S / 2 + ox) / W;
       const v = ((py[i] - 0.5) * S + S / 2 + oy) / H;
       if (u < 0 || v < 0 || u > 1 || v > 1) continue;
-      splat(d, u, v, grainSize, grainRGB[0], grainRGB[1], grainRGB[2], A2);
+      // it was painting every grain the palette colour, so the fractal was the
+      // one view that never showed which channel a grain belonged to
+      const mc = (CH.length && chanOf) ? CH[chanOf[i]] : null;
+      const cc = (mc && mc.active && mc.energy > 0.2) ? mc.colour : grainRGB;
+      splat(d, u, v, grainSize, cc[0], cc[1], cc[2], A2);
     }
     grainCtx.putImageData(glImg, 0, 0);
     ctx.drawImage(grainCanvas, 0, 0, W, H);
@@ -2123,6 +2226,7 @@ function renderFractal() {
 
 function render() {
   if (genesisLine) { renderLine(); return; }
+  if (viewMode === 4) { renderTime(); return; }
   if (viewMode === 3) { renderFractal(); return; }
   if (viewMode === 2) { renderScope(); return; }
   if (mode3d) { render3d(); return; }
@@ -2481,10 +2585,13 @@ $("freeze").addEventListener("click", () => {
 });
 
 /* three views of one signal: flat plate → plate in space → the signal across time */
-const VIEW_NAMES = ["2D plate", "3D plate — drag to orbit", "Scope — the signal in time", "Fractal — the sound as a set"];
+const VIEW_NAMES = ["2D plate", "3D plate — drag to orbit", "Scope — the signal in time",
+                    "Fractal — the sound as a set", "Time — the sound through space"];
 $("dim").addEventListener("click", () => {
-  viewMode = (viewMode + 1) % 4;
-  mode3d = viewMode === 1 || viewMode === 2; // orbit lives in the 3D views
+  viewMode = (viewMode + 1) % 5;
+  mode3d = viewMode === 1 || viewMode === 2 || viewMode === 4; // orbit lives in the 3D views
+  // a helix wants to be seen from the side and from further off than a flat plate
+  if (viewMode === 4) { pitchAng = 0.28; yaw = 0.5; camD = 2.4; }
   $("dim").textContent = `View: ${VIEW_NAMES[viewMode]}`;
   $("dim").classList.toggle("armed", viewMode !== 0);
   pointers.clear();
@@ -2831,6 +2938,8 @@ window.QALA = {
         drive: () => drive, lowE: () => lowE, highE: () => highE,
         acState: () => (AC ? AC.state : null), sounding: () => anythingSounding(),
         surfPh: () => surfPh, surfDiv: () => surfDiv,
+        shells: () => tsCount,
+        pushShell: (step) => { tsAng += step; timePush(); return tsCount; },
         near: (cx, cy, r) => { let n = 0; const r2 = r * r;
           for (let i = 0; i < activeCount; i++) {
             const ex = px[i] - cx, ey = py[i] - cy;
