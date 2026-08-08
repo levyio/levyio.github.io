@@ -594,16 +594,16 @@
       <input type="range" id="surf" min="10" max="400" step="5" value="60" aria-label="How far the 3D surface's real frequency is slowed to be watchable" />
     </div>
     <div class="strip">
-      <div class="strip-head"><span class="mono">Time · spin</span><span class="mono val" id="v-tspin">0.20</span></div>
-      <input type="range" id="tspin" min="0" max="1.5" step="0.01" value="0.2" aria-label="How fast the time view winds around its axis" />
+      <div class="strip-head"><span class="mono">Time · slow motion</span><span class="mono val" id="v-tslow">1/200</span></div>
+      <input type="range" id="tslow" min="20" max="800" step="10" value="200" aria-label="How far the free-air view is slowed — wavelength is unaffected" />
     </div>
     <div class="strip">
-      <div class="strip-head"><span class="mono">Time · orbit</span><span class="mono val" id="v-torbit">0.55</span></div>
-      <input type="range" id="torbit" min="0" max="1.6" step="0.01" value="0.55" aria-label="How far the plate swings from the time axis" />
+      <div class="strip-head"><span class="mono">Time · box</span><span class="mono val" id="v-tbox">3.0 m</span></div>
+      <input type="range" id="tbox" min="0.4" max="12" step="0.1" value="3" aria-label="How many real metres across the free-air box is" />
     </div>
     <div class="strip">
-      <div class="strip-head"><span class="mono">Time · depth</span><span class="mono val" id="v-tdepth">1.00</span></div>
-      <input type="range" id="tdepth" min="0.15" max="3" step="0.05" value="1" aria-label="How far apart the moments sit along the time axis" />
+      <div class="strip-head"><span class="mono">Time · worldline</span><span class="mono val" id="v-tspan">20 ms</span></div>
+      <input type="range" id="tspan" min="2" max="120" step="1" value="20" aria-label="How much of each particle's life is drawn" />
     </div>
     <div class="strip">
       <div class="strip-head"><span class="mono">Settle</span><span class="mono val" id="v-settle">600 ms</span></div>
@@ -629,6 +629,7 @@
     <hr />
 
     <div class="btnrow">
+      <button id="edges" class="armed">Edges: reflect</button>
       <button id="hand">Hand: draw</button>
       <button id="handSize">Hand: medium</button>
     </div>
@@ -945,6 +946,16 @@ async function toggleMic() {
     if (genesisStage >= 0) $("gen-cap").textContent = "no microphone — press A and the instrument will sound its own tone";
   }
 }
+$("edges").addEventListener("click", () => {
+  edgeMode = edgeMode ? 0 : 1;
+  $("edges").textContent = `Edges: ${edgeMode ? "reflect" : "open"}`;
+  $("edges").classList.toggle("armed", !!edgeMode);
+  $("status").textContent = edgeMode
+    ? "the plate is held at its rim — reflections make the standing wave"
+    : "no boundary — nothing reflects, so no standing wave forms"
+    + (tileMode ? " (seamless already required this)" : "");
+});
+
 const HANDS = [["shake", 0], ["draw", 1], ["sweep", 2]];
 const HAND_SIZES = [["small", 0.03], ["medium", 0.055], ["wide", 0.1]];
 let handIdx = 1, handSizeIdx = 1;
@@ -1182,9 +1193,13 @@ const plateBars = [
   ["plate", "v-plate", (v) => { plateHz = +v; return `${Math.round(v)} Hz`; }],
   ["surf", "v-surf", (v) => { surfDiv = +v; const f = modes[0] && modes[0].hz;
     return f ? `÷${v} · ${(f / v).toFixed(1)} Hz seen` : `÷${v}`; }],
-  ["tspin", "v-tspin", (v) => { timeSpin = +v; return (+v).toFixed(2); }],
-  ["torbit", "v-torbit", (v) => { timeOrbit = +v; return (+v).toFixed(2); }],
-  ["tdepth", "v-tdepth", (v) => { timeDepth = +v; return (+v).toFixed(2); }],
+  // the three honest knobs of the free-air view: how far slowed, how big the
+  // box is in real metres, and how much of each particle's life is drawn
+  ["tslow", "v-tslow", (v) => { timeSlow = +v; return `1/${Math.round(v)}`; }],
+  ["tbox", "v-tbox", (v) => { timeBoxM = +v;
+    const f = modes[0] && modes[0].hz;
+    return f ? `${(+v).toFixed(1)} m · ${((+v) / (343 / f)).toFixed(1)}λ` : `${(+v).toFixed(1)} m`; }],
+  ["tspan", "v-tspan", (v) => { timeSpanS = +v / 1000; return `${Math.round(v)} ms`; }],
   ["settle", "v-settle", (v) => { settleMs = +v; return `${v} ms`; }],
   ["morph", "v-morph", (v) => { morphSec = +v; return `${(+v).toFixed(2)} s`; }],
   ["couple", "v-couple", (v) => { couple = +v; return (+v).toFixed(2); }],
@@ -1420,6 +1435,7 @@ const PHASE_ORDER = ["solid", "liquid", "gas"];
 let phaseName = "solid", phase = PHASES.solid;
 let corners = 4;                        // the container: 4 = square … 33 = circle
 let tileMode = false;                   // no edge: the pattern meets itself and repeats
+let edgeMode = 1;                       // 1 = the plate has a rim and reflects · 0 = no boundary
 let frExpand = 1, frT = 0;              // the fractal's outward growth, and its own clock
 let imgAsBg = false;                    // image behind, pulled apart by the grains
 let haze = 0;                           // the video-feedback smear — off by default
@@ -1584,36 +1600,57 @@ function modeForHz(hz) {
   return [Math.min(MODE_MAX, bm + patternAdd), Math.min(MODE_MAX, bn + patternAdd)];
 }
 
-/* ── TIME: the plate's history as a body in space ──────────────────────────
-   Every so often a shell is taken — a thin sample of where the grains are just
-   then — and stacked behind the ones before it. Time is the axis: a straight
-   constant the whole thing recedes along. The sound is what turns it, each
-   shell laid down at the angle the tone had reached, so a steady note winds a
-   smooth helix and a moving one wanders. Freeze stops new shells and leaves the
-   structure standing, which is the way to look at a figure as a solid: still
-   particles, held in their positional relation. */
-const TSHELLS = 56, TSHELL_N = 900;
-const tsX = new Float32Array(TSHELLS * TSHELL_N);
-const tsY = new Float32Array(TSHELLS * TSHELL_N);
-const tsC = new Uint8Array(TSHELLS * TSHELL_N * 3);
-const tsAngOf = new Float32Array(TSHELLS);
-let tsHead = 0, tsCount = 0, tsAng = 0, tsPushT = -1e9;
-let timeSpin = 0.2, timeDepth = 1, timeOrbit = 0.55, timeScaleS = 0.5;
+/* ── TIME: sound in free air, followed particle by particle ───────────────
 
-function timePush() {
-  const base = tsHead * TSHELL_N;
-  for (let k = 0; k < TSHELL_N; k++) {
-    const i = (Math.random() * activeCount) | 0;
-    tsX[base + k] = px[i] - 0.5;
-    tsY[base + k] = py[i] - 0.5;
-    const mc = (CH.length && chanOf) ? CH[chanOf[i]] : null;
-    const cc = (mc && mc.active && mc.energy > 0.2) ? mc.colour : grainRGB;
-    const o = (base + k) * 3;
-    tsC[o] = cc[0]; tsC[o + 1] = cc[1]; tsC[o + 2] = cc[2];
+   A plate has edges, and edges reflect — that is the whole reason it holds a
+   STANDING wave and shows a figure at all. Take the edges away and there is
+   nothing to reflect off: only a travelling wave. And what that reveals is the
+   thing a plate cannot show, because a plate flexes across its face while air
+   does not: sound is LONGITUDINAL. The air never travels with the wave. Each
+   particle slides back and forth about a rest position ALONG the direction of
+   travel, and what moves is the disturbance, not the matter.
+
+   So this view is a spacetime diagram. One axis is distance in metres, one is
+   time receding into the screen, and the third spreads the particles out so
+   they can be told apart. Each thread is one particle's worldline. The threads
+   lean, because the pattern advances — but every particle stays beside its own
+   rest position, which is the point.
+
+   TRUE here:
+     wavelength   λ = c/f at c = 343 m/s. 220 Hz really is 1.56 m, and the box
+                  is labelled in metres.
+     wave speed   the tilt of the pattern through spacetime is c.
+     longitudinal displacement is along travel, not across it.
+
+   NOT true, and named on screen:
+     time         220 oscillations a second is past the screen and the eye, so
+                  it runs in slow motion by a stated factor. Slow motion leaves
+                  wavelength alone — only the clock changes — so the geometry
+                  stays honest.
+     amplitude    air moves about 1e-7 m at conversational loudness. Invisible.
+                  Exaggerated by a stated factor.
+
+   No boundary, so no reflection, so no standing wave and no figure. That
+   absence is the finding, not a shortcoming. */
+const C_AIR = 343;                       // m/s, dry air at 20°C
+const TP = 420, TWORLD = 44;             // particles, and samples along each worldline
+const tpX0 = new Float32Array(TP), tpY0 = new Float32Array(TP);
+const tpC = new Uint8Array(TP * 3);
+let timeBoxM = 3.0;                      // how many metres across the box is
+let timeSpanS = 0.02;                    // how many seconds of worldline are drawn
+let timeExag = 0.06;                     // displacement exaggeration, in metres
+let timeSlow = 200;                      // slow-motion divisor
+let tSeeded = false;
+
+function timeSeed() {
+  for (let i = 0; i < TP; i++) {
+    tpX0[i] = Math.random();                       // fraction of the box
+    tpY0[i] = Math.random() - 0.5;
+    const mc = (CH.length && chanOf) ? CH[chanOf[i % Math.max(1, activeCount)]] : null;
+    const cc = mc ? mc.colour : grainRGB;
+    tpC[i * 3] = cc[0]; tpC[i * 3 + 1] = cc[1]; tpC[i * 3 + 2] = cc[2];
   }
-  tsAngOf[tsHead] = tsAng;
-  tsHead = (tsHead + 1) % TSHELLS;
-  if (tsCount < TSHELLS) tsCount++;
+  tSeeded = true;
 }
 
 function renderTime() {
@@ -1621,46 +1658,60 @@ function renderTime() {
   ctx.fillStyle = palette.bg;
   ctx.fillRect(0, 0, W, H);
   if (!glImg) return;
+  if (!tSeeded) timeSeed();
   const d = glImg.data;
-  d.fill(0);                                   // a body, not a smear
+  d.fill(0);
+
+  const f = (modes.length && modes[0].hz) ? modes[0].hz : 0;
+  const lam = f > 0 ? C_AIR / f : 0;                       // metres — the true wavelength
+  const k = lam > 0 ? (Math.PI * 2) / lam : 0;
+  const w = Math.PI * 2 * f;
+  const amp = timeExag * Math.min(1, drive * 3);
+  const tNow = (simT * 0.001) / Math.max(1, timeSlow);     // slow motion: the clock only
+
   const cyw = Math.cos(yaw), syw = Math.sin(yaw);
   const cp = Math.cos(pitchAng), sp = Math.sin(pitchAng);
-  const fl = 1.35, K = 0.82, gap = 0.055 * timeDepth;
+  const fl = 1.35, K = 0.8;
+  const A = (paintAlpha * 255) | 0;
 
-  for (let s = 0; s < tsCount; s++) {
-    // oldest first, so nearer shells paint over farther ones
-    const age = tsCount - 1 - s;
-    const idx = ((tsHead - 1 - age) % TSHELLS + TSHELLS) % TSHELLS;
-    const th = tsAngOf[idx];
-    const ca = Math.cos(th), sa = Math.sin(th);
-    const z = -age * gap;
-    const fade = 1 - age / TSHELLS;
-    const A = (paintAlpha * 255 * fade * fade) | 0;
-    if (A < 4) continue;
-    const base = idx * TSHELL_N;
-    for (let k = 0; k < TSHELL_N; k++) {
-      const x0 = tsX[base + k], y0 = tsY[base + k];
-      // The shell ORBITS the time axis rather than spinning about its own
-      // centre — turning a symmetric cloud on the spot looks identical at every
-      // angle, which drew a slab instead of a spiral. Carried out to a radius,
-      // the same rotation becomes a galaxy arm.
-      const wx = x0 * timeScaleS + ca * timeOrbit;
-      const wy = y0 * timeScaleS + sa * timeOrbit;
-      const X1 = wx * cyw + z * syw;                          // camera yaw
-      const Z1 = -wx * syw + z * cyw;
-      const Y2 = wy * cp - Z1 * sp;                           // camera pitch
-      const Z2 = wy * sp + Z1 * cp;
-      const denom = camD + Z2;
-      if (denom < 0.08) continue;
-      const sc = fl / denom;
-      const u = 0.5 + X1 * sc * K, v = 0.5 + Y2 * sc * K;
-      if (u < 0.001 || v < 0.001 || u > 0.999 || v > 0.999) continue;
-      const o = (base + k) * 3;
-      splat(d, u, v, grainSize, tsC[o], tsC[o + 1], tsC[o + 2], A);
+  for (let i = 0; i < TP; i++) {
+    const x0m = tpX0[i] * timeBoxM;                        // rest position, in metres
+    const o = i * 3;
+    for (let j = 0; j < TWORLD; j++) {
+      const frac = j / (TWORLD - 1);
+      const tau = tNow - frac * timeSpanS;                 // back along this particle's life
+      // the wave has only reached as far as it has had time to travel
+      if (x0m > C_AIR * Math.max(0, tau)) continue;
+      const u = k > 0 ? amp * Math.sin(k * x0m - w * tau) : 0;
+      const X = ((x0m + u) / timeBoxM) - 0.5;              // displaced, ALONG travel
+      const Z = -frac * 1.4;                               // time recedes
+      const Y = tpY0[i] * 0.75;
+      const X1 = X * cyw + Z * syw;
+      const Z1 = -X * syw + Z * cyw;
+      const Y2 = Y * cp - Z1 * sp;
+      const Z2 = Y * sp + Z1 * cp;
+      const den = camD + Z2;
+      if (den < 0.08) continue;
+      const sc = fl / den;
+      const uu = 0.5 + X1 * sc * K, vv = 0.5 + Y2 * sc * K;
+      if (uu < 0.001 || vv < 0.001 || uu > 0.999 || vv > 0.999) continue;
+      const a = (A * (1 - frac * 0.75)) | 0;
+      splat(d, uu, vv, grainSize, tpC[o], tpC[o + 1], tpC[o + 2], a);
     }
   }
   grainCtx.putImageData(glImg, 0, 0);
   ctx.drawImage(grainCanvas, 0, 0, W, H);
+
+  // say what is true and what is scaled, on the picture itself
+  ctx.fillStyle = palette.grain;
+  ctx.globalAlpha = 0.55;
+  ctx.font = `${Math.round(W * 0.018)}px ui-monospace, Menlo, monospace`;
+  const lines = f > 0
+    ? [`${Math.round(f)} Hz · λ = ${lam.toFixed(2)} m · box ${timeBoxM.toFixed(1)} m`,
+       `1/${timeSlow} speed · displacement exaggerated · no boundary, so no standing wave`]
+    : ["silent — no wave to follow"];
+  lines.forEach((s, n) => ctx.fillText(s, W * 0.03, H * 0.06 + n * W * 0.024));
+  ctx.globalAlpha = 1;
 }
 
 /* Chladni amplitude for a square plate — sum of the superposed modes */
@@ -1728,11 +1779,6 @@ function step() {
   // stopped in silence.
   const fSurf = modes.length ? (modes[0].hz || 0) : 0;
   if (drive > 0.01 && fSurf > 0) surfPh += (fSurf / Math.max(1, surfDiv)) * dtS * Math.PI * 2;
-  // the galaxy turns at the same rate the surface flaps, so the two views agree
-  if (viewMode === 4 && !frozen && drive > 0.01) {
-    if (fSurf > 0) tsAng += (fSurf / Math.max(1, surfDiv)) * dtS * Math.PI * 2 * timeSpin;
-    if (simT - tsPushT > 55) { tsPushT = simT; timePush(); }
-  }
   // audio → mode (spectral peak) + drive (time-domain RMS — honest loudness)
   if (analyser) {
     analyser.getByteFrequencyData(freq);
@@ -1840,14 +1886,16 @@ function step() {
   const flowF = frozen ? 0 : flow * 0.00015 * (1 + drive) * timeScale;
   const kickF = frozen ? 0 : kick * 0.0012 * timeScale;
   const nModes = modes.length;
-  const inFr = viewMode === 3;
+  const inFr = false;   // the fractal view measures the plate; it no longer redraws it at three scales
   // the fractal grows on sound, not on the wall clock — in silence it holds,
   // which is the whole promise that nothing moves when nothing sounds
   if (inFr) {
     if (drive > 0.01) frT += 16.7 * timeScale;
     frExpand = 1 + ((frT * 0.00004) % 3);
   }
-  const octs = inFr ? 3 : 1;                          // self-similar repetitions
+  const octs = 1;
+  // wrapping is the unbounded case; the seamless tile requires it
+  const bounded = edgeMode === 1 && !tileMode;
   const ca = 1 + balance, cb = 1 - balance;
   for (let i = 0; i < activeCount; i++) {
     const x = px[i], y = py[i];
@@ -1912,8 +1960,9 @@ function step() {
     vy[i] = vy[i] * (drag * phase.drag > 0.985 ? 0.985 : drag * phase.drag) + ay + (Math.random() - 0.5) * walk;
     px[i] = x + vx[i];
     py[i] = y + vy[i];
-    if (inFr) {
-      // in the vacuum the pattern has walls: it bounces off the container
+    if (bounded) {
+      // a real plate is held at its rim, and the rim reflects — that is the
+      // reason a standing wave forms and a figure appears at all
       const dx0 = px[i] - 0.5, dy0 = py[i] - 0.5;
       const rr = Math.sqrt(dx0 * dx0 + dy0 * dy0);
       if (rr > 0.0001) {
@@ -2183,6 +2232,135 @@ function renderLine() {
 /* the fractal view: not a generic set — the plate's OWN figure, read at
    growing scales so it repeats outward into empty space, inside a container
    the grains bounce off. Corners: 4 = square … 33 = a circle. */
+/* Does the figure actually have a fractal dimension?
+
+   The old view ASSUMED it did: it redrew the same field at three scales and
+   called the self-similarity a result. That is circular — it manufactured the
+   thing it claimed to show.
+
+   Box-counting instead. Cover the plate with boxes of side s and count how many
+   hold at least one grain, N(s). A set that is self-similar obeys N(s) ~ s^-D,
+   so log N against log(1/s) is a straight line whose slope is D. A smooth curve
+   gives D≈1, dust filling the plane gives D≈2, and a rough set in between gives
+   a fraction — that is what "fractal dimension" means.
+
+   The honest part is R². If the points do not fall on a line there is no single
+   dimension, and the answer to "is this fractal?" is no over this range. The
+   instrument is allowed to say so. */
+const BOX_GRIDS = [4, 8, 16, 32, 64, 128];
+let fracD = 0, fracR2 = 0, fracPts = [], fracBeta = NaN, fracBins = 0, lastFracT = -1e9;
+let fdb = null;
+
+function measureFractal() {
+  const xs = [], ys = [];
+  fracPts = [];
+  for (const g of BOX_GRIDS) {
+    const occ = new Uint8Array(g * g);
+    let n = 0;
+    for (let i = 0; i < activeCount; i++) {
+      const gx = (px[i] * g) | 0, gy = (py[i] * g) | 0;
+      if (gx < 0 || gy < 0 || gx >= g || gy >= g) continue;
+      const o = gy * g + gx;
+      if (!occ[o]) { occ[o] = 1; n++; }
+    }
+    const lx = Math.log(g), ly = Math.log(Math.max(1, n));
+    xs.push(lx); ys.push(ly);
+    fracPts.push([lx, ly, n, g]);
+  }
+  // least squares: the slope IS the dimension
+  const N = xs.length;
+  let sx = 0, sy = 0;
+  for (let i = 0; i < N; i++) { sx += xs[i]; sy += ys[i]; }
+  const mx = sx / N, my = sy / N;
+  let num = 0, den = 0;
+  for (let i = 0; i < N; i++) { num += (xs[i] - mx) * (ys[i] - my); den += (xs[i] - mx) ** 2; }
+  fracD = den > 1e-9 ? num / den : 0;
+  let ssRes = 0, ssTot = 0;
+  for (let i = 0; i < N; i++) {
+    const fit = my + fracD * (xs[i] - mx);
+    ssRes += (ys[i] - fit) ** 2; ssTot += (ys[i] - my) ** 2;
+  }
+  fracR2 = ssTot > 1e-12 ? 1 - ssRes / ssTot : 0;
+
+  // and the signal itself: 1/f^beta. beta near 1 is scale-free (pink) noise
+  if (analyser) {
+    // Must be LINEAR power. freq[] is the byte array: decibels squashed into
+    // 0..255 between the analyser's min/max, so fitting it yields a number with
+    // no physical meaning. getFloatFrequencyData gives true dB, and
+    // power = 10^(dB/10), so ln(power) = dB * ln(10) / 10.
+    const lf = [], lp = [];
+    const binHz = AC.sampleRate / analyser.fftSize;
+    if (!fdb || fdb.length !== analyser.frequencyBinCount) fdb = new Float32Array(analyser.frequencyBinCount);
+    analyser.getFloatFrequencyData(fdb);
+    for (let i = 4; i < Math.min(1600, fdb.length); i += 4) {
+      const db = fdb[i];
+      if (db > -95 && Number.isFinite(db)) {
+        lf.push(Math.log(i * binHz));
+        lp.push(db * Math.LN10 / 10);
+      }
+    }
+    fracBins = lf.length;
+    fracBeta = NaN;
+    // a pure tone is a spike, not a spectrum. There is no power law to fit and
+    // printing 0.00 would be inventing a measurement that was never made.
+    if (lf.length > 12) {
+      let ax = 0, ay = 0;
+      for (let i = 0; i < lf.length; i++) { ax += lf[i]; ay += lp[i]; }
+      ax /= lf.length; ay /= lf.length;
+      let nu = 0, de = 0;
+      for (let i = 0; i < lf.length; i++) { nu += (lf[i] - ax) * (lp[i] - ay); de += (lf[i] - ax) ** 2; }
+      fracBeta = de > 1e-9 ? -nu / de : 0;
+    }
+  }
+}
+
+function drawFractalReadout() {
+  // the panel holds the plot AND its numbers, so nothing spills over the plate
+  const pad = W * 0.03, bw = W * 0.36, fs = Math.max(9, Math.round(W * 0.0155));
+  const bh = bw * 0.46, ph = bh + fs * 4.6;
+  const x0 = W - bw - pad, y0 = pad;
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = palette.bg; ctx.fillRect(x0, y0, bw, ph);
+  ctx.strokeStyle = palette.grain; ctx.globalAlpha = 0.22;
+  ctx.strokeRect(x0, y0, bw, ph);
+
+  // the log-log points, and the fitted line through them
+  if (fracPts.length) {
+    const lxs = fracPts.map((p) => p[0]), lys = fracPts.map((p) => p[1]);
+    const xmin = Math.min(...lxs), xmax = Math.max(...lxs);
+    const ymin = Math.min(...lys), ymax = Math.max(...lys);
+    const sx = (v) => x0 + bw * 0.10 + ((v - xmin) / Math.max(1e-6, xmax - xmin)) * bw * 0.80;
+    const sy = (v) => y0 + bh * 0.84 - ((v - ymin) / Math.max(1e-6, ymax - ymin)) * bh * 0.66;
+    const mx = lxs.reduce((a, b) => a + b, 0) / lxs.length;
+    const my = lys.reduce((a, b) => a + b, 0) / lys.length;
+    ctx.globalAlpha = 0.5; ctx.strokeStyle = palette.grain;
+    ctx.beginPath();
+    ctx.moveTo(sx(xmin), sy(my + fracD * (xmin - mx)));
+    ctx.lineTo(sx(xmax), sy(my + fracD * (xmax - mx)));
+    ctx.stroke();
+    ctx.globalAlpha = 1; ctx.fillStyle = `rgb(${palette.tint})`;
+    for (const [lx, ly] of fracPts) ctx.fillRect(sx(lx) - 2, sy(ly) - 2, 4, 4);
+  }
+
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = palette.grain;
+  ctx.font = `${fs}px ui-monospace, Menlo, monospace`;
+  const scaleFree = fracR2 > 0.985 && fracD > 1.05 && fracD < 1.95;
+  const verdict = fracR2 <= 0.985 ? "no single dimension here — not scale-free"
+                : fracD >= 1.95 ? "space-filling dust, not a fractal"
+                : fracD <= 1.05 ? "essentially a line"
+                : "scale-free across these boxes";
+  const lines = [
+    `box-counting  D = ${fracD.toFixed(3)}   R² = ${fracR2.toFixed(4)}`,
+    Number.isFinite(fracBeta)
+      ? `spectrum      1/f^β,  β = ${fracBeta.toFixed(2)}`
+      : `spectrum      too few bins (${fracBins}) — a tone is a spike, not a law`,
+    verdict,
+  ];
+  lines.forEach((s, i) => ctx.fillText(s, x0 + bw * 0.06, y0 + bh + fs * 1.5 + i * fs * 1.35));
+  ctx.globalAlpha = 1;
+}
+
 function renderFractal() {
   ctx.globalAlpha = 1;
   ctx.fillStyle = palette.bg;
@@ -2227,7 +2405,7 @@ function renderFractal() {
 function render() {
   if (genesisLine) { renderLine(); return; }
   if (viewMode === 4) { renderTime(); return; }
-  if (viewMode === 3) { renderFractal(); return; }
+  if (viewMode === 3) { if (simT - lastFracT > 250) { lastFracT = simT; measureFractal(); } renderFractal(); drawFractalReadout(); return; }
   if (viewMode === 2) { renderScope(); return; }
   if (mode3d) { render3d(); return; }
   // fresh ground every frame — feedback is bounded, never accumulates to mud
