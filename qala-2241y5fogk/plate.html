@@ -567,6 +567,10 @@
       <input type="range" id="plate" min="30" max="600" step="1" value="110" aria-label="The plate's own fundamental — a bigger, heavier plate sits lower" />
     </div>
     <div class="strip">
+      <div class="strip-head"><span class="mono">Surface (3D) ÷</span><span class="mono val" id="v-surf">÷60</span></div>
+      <input type="range" id="surf" min="10" max="400" step="5" value="60" aria-label="How far the 3D surface's real frequency is slowed to be watchable" />
+    </div>
+    <div class="strip">
       <div class="strip-head"><span class="mono">Settle</span><span class="mono val" id="v-settle">600 ms</span></div>
       <input type="range" id="settle" min="0" max="2500" step="50" value="600" aria-label="How long a figure is held before it may change" />
     </div>
@@ -1141,6 +1145,8 @@ const plateBars = [
   ["nmodes", "v-modes", (v) => { maxModes = +v; return `${v}`; }],
   ["haze", "v-haze", (v) => { haze = +v; return (+v).toFixed(2); }],
   ["plate", "v-plate", (v) => { plateHz = +v; return `${Math.round(v)} Hz`; }],
+  ["surf", "v-surf", (v) => { surfDiv = +v; const f = modes[0] && modes[0].hz;
+    return f ? `÷${v} · ${(f / v).toFixed(1)} Hz seen` : `÷${v}`; }],
   ["settle", "v-settle", (v) => { settleMs = +v; return `${v} ms`; }],
   ["morph", "v-morph", (v) => { morphSec = +v; return `${(+v).toFixed(2)} s`; }],
   ["couple", "v-couple", (v) => { couple = +v; return (+v).toFixed(2); }],
@@ -1524,6 +1530,8 @@ function seed() {
    The FREQUENCIES below are now the real law; the SHAPES remain the idealised
    sin(mπx)sin(nπy) family. */
 let plateHz = 110;                      // the fundamental of the plate itself
+let surfPh = 0;                         // the 3D surface's own phase
+let surfDiv = 60;                       // real Hz / this = the rate you can watch
 const MODE_MAX = 14;
 function modeForHz(hz) {
   const f0 = Math.max(20, plateHz * material.modeScale);
@@ -1595,6 +1603,14 @@ function step() {
     const norm = s > 1e-6 ? N / s : 1;
     for (let k = 0; k < N; k++) modes[k].bw *= norm;
   } else if (modes[0]) { modes[0].bw = 1; beatPh = 0; }
+  // The 3D plate heaves at the tone's own frequency. At 220 Hz that is 220
+  // times a second — past the screen, past the eye, and it would alias into
+  // nonsense. So it turns at the real frequency divided by surfDiv: a higher
+  // note visibly flaps faster, which is the part that carries meaning. It was
+  // a fixed 0.4 Hz from a frame counter before, tied to nothing, and it never
+  // stopped in silence.
+  const fSurf = modes.length ? (modes[0].hz || 0) : 0;
+  if (drive > 0.01 && fSurf > 0) surfPh += (fSurf / Math.max(1, surfDiv)) * dtS * Math.PI * 2;
   // audio → mode (spectral peak) + drive (time-domain RMS — honest loudness)
   if (analyser) {
     analyser.getByteFrequencyData(freq);
@@ -1863,7 +1879,7 @@ function render3d() {
   const cyw = Math.cos(yaw), syw = Math.sin(yaw);
   const cp = Math.cos(pitchAng), sp = Math.sin(pitchAng);
   const fl = 1.35, K = W * 0.92;
-  const phase = Math.sin(simT * 0.0025);
+  const phase = Math.sin(surfPh);
   const amp = 0.16 + drive * 0.14;
   const proj = (x, y, z) => {
     const X0 = x - 0.5, Y0 = y - 0.5;
@@ -2791,6 +2807,7 @@ window.QALA = {
   _t: { printArm, printCompose, pngWithText, frames: () => pFrames, buf: () => pBuf,
         drive: () => drive, lowE: () => lowE, highE: () => highE,
         acState: () => (AC ? AC.state : null), sounding: () => anythingSounding(),
+        surfPh: () => surfPh, surfDiv: () => surfDiv,
         near: (cx, cy, r) => { let n = 0; const r2 = r * r;
           for (let i = 0; i < activeCount; i++) {
             const ex = px[i] - cx, ey = py[i] - cy;
