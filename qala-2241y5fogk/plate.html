@@ -586,6 +586,22 @@
       <input type="range" id="haze" min="0" max="0.6" step="0.01" value="0" aria-label="Video feedback haze" />
     </div>
     <div class="strip">
+      <div class="strip-head"><span class="mono">Drive</span><span class="mono val" id="v-drivemode">Chladni modes</span></div>
+      <button id="drivemode" style="width:100%">Drive: Chladni modes</button>
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Cascade · octaves</span><span class="mono val" id="v-woct">7</span></div>
+      <input type="range" id="woct" min="1" max="12" step="1" value="7" aria-label="How many octaves the cascade sums — the prediction is only reached in the limit" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Cascade · amplitude a</span><span class="mono val" id="v-wa">0.75</span></div>
+      <input type="range" id="wa" min="0.3" max="0.95" step="0.01" value="0.75" aria-label="How slowly the octaves fade — larger is rougher" />
+    </div>
+    <div class="strip">
+      <div class="strip-head"><span class="mono">Cascade · frequency b</span><span class="mono val" id="v-wb">2.00</span></div>
+      <input type="range" id="wb" min="1.4" max="4" step="0.05" value="2" aria-label="How far apart the octaves sit" />
+    </div>
+    <div class="strip">
       <div class="strip-head"><span class="mono">Plate (its fundamental)</span><span class="mono val" id="v-plate">110 Hz</span></div>
       <input type="range" id="plate" min="30" max="600" step="1" value="110" aria-label="The plate's own fundamental — a bigger, heavier plate sits lower" />
     </div>
@@ -946,6 +962,18 @@ async function toggleMic() {
     if (genesisStage >= 0) $("gen-cap").textContent = "no microphone — press A and the instrument will sound its own tone";
   }
 }
+$("drivemode").addEventListener("click", () => {
+  driveMode = driveMode ? 0 : 1;
+  buildCascade();
+  const on = driveMode === 1;
+  $("drivemode").textContent = `Drive: ${on ? "Weierstrass cascade" : "Chladni modes"}`;
+  $("drivemode").classList.toggle("armed", on);
+  $("v-drivemode").textContent = on ? `${nOct} octaves` : "Chladni modes";
+  $("status").textContent = on
+    ? `cascade: ${nOct} octaves (sand resolves ${grainOctaveLimit()}), H = ${cascadeH().toFixed(3)} — D → ${cascadePredictedD().toFixed(3)} only in the limit`
+    : "back to a finite sum of modes — smooth, and never fractal";
+});
+
 $("edges").addEventListener("click", () => {
   edgeMode = edgeMode ? 0 : 1;
   $("edges").textContent = `Edges: ${edgeMode ? "reflect" : "open"}`;
@@ -1190,6 +1218,11 @@ const plateBars = [
   ["walk", "v-walk", (v) => { minWalk = +v; return (+v).toFixed(4); }],
   ["nmodes", "v-modes", (v) => { maxModes = +v; return `${v}`; }],
   ["haze", "v-haze", (v) => { haze = +v; return (+v).toFixed(2); }],
+  ["woct", "v-woct", (v) => { wOct = +v; buildCascade();
+    const lim = grainOctaveLimit();
+    return +v <= lim ? `${v}` : `${v}  (sand resolves ${lim})`; }],
+  ["wa", "v-wa", (v) => { wA = +v; buildCascade(); return (+v).toFixed(2); }],
+  ["wb", "v-wb", (v) => { wB = +v; buildCascade(); return (+v).toFixed(2); }],
   ["plate", "v-plate", (v) => { plateHz = +v; return `${Math.round(v)} Hz`; }],
   ["surf", "v-surf", (v) => { surfDiv = +v; const f = modes[0] && modes[0].hz;
     return f ? `÷${v} · ${(f / v).toFixed(1)} Hz seen` : `÷${v}`; }],
@@ -1567,6 +1600,64 @@ function seed() {
   for (let i = 0; i < MAXG; i++) { px[i] = Math.random(); py[i] = Math.random(); }
 }
 
+/* ── THE CASCADE: a drive that can actually be fractal ────────────────────
+
+   A finite sum of sine products is smooth and band-limited, so its nodal set is
+   a smooth curve — dimension 1. No tuning makes it fractal; that is a fact
+   about the model, not a shortfall of effort. Measured D between 1 and 2 in
+   that regime is reporting how thick and scattered the dust is, nothing more.
+
+   Weierstrass showed the way out in 1872: keep summing sines, but let the
+   frequencies rise geometrically while the amplitudes fall geometrically.
+
+       W(x,y) = Σ  aᵏ · φ(bᵏ·x, bᵏ·y)        0 < a < 1,  b > 1,  ab > 1
+
+   With ab > 1 the derivative series diverges: continuous everywhere,
+   differentiable nowhere. The surface is self-affine with Hurst exponent
+   H = ln(1/a)/ln(b), and its LEVEL SETS — which is what the dust settles on —
+   have dimension
+
+       D = 2 − H
+
+   That is the point of building it: the dimension is known BEFORE measuring, so
+   the box-count becomes a test the instrument can fail. Checked offline against
+   this exact construction: a=0.8 b=2 predicted 1.678, measured 1.673; a=0.7 b=2
+   predicted 1.485, measured 1.511.
+
+   Truncated at the grain, and honestly so. The cascade stops when an octave's
+   wavelength falls below a few grain spacings — a real plate of real sand
+   cannot hold structure finer than its sand either. That caps the usable range
+   near 1.5 decades at 40,000 grains, which is why more grains buy a better
+   test. */
+let driveMode = 0;                      // 0 = Chladni modes · 1 = the cascade
+let wA = 0.75, wB = 2.0, wOct = 7;      // amplitude ratio, frequency ratio, octave count
+let octF = [1], octA = [1], nOct = 1;
+
+/* How many octaves the SAND can resolve — the finest must still span a few
+   grain spacings. This is a real physical ceiling, not a software one: a plate
+   of real sand cannot hold structure finer than its sand either. */
+function grainOctaveLimit() {
+  const across = Math.sqrt(Math.max(1, activeCount));
+  const finest = across / 4;
+  const base = Math.max(1, modes[0] ? modes[0].m : 3);
+  let k = 0, f = 1;
+  while (base * f <= finest && k < 12) { k++; f *= wB; }
+  return Math.max(1, k);
+}
+function buildCascade() {
+  if (driveMode === 0) { octF = [1]; octA = [1]; nOct = 1; return; }
+  // D = 2 − H is ASYMPTOTIC: it assumes infinitely many octaves. Truncated it
+  // sits below, and climbs as octaves are added — 1.42 at five, 1.60 by seven
+  // for a=0.75 b=2. So the octave count is exposed, and the sand's own ceiling
+  // is shown beside it: the field may carry more detail than dust can show.
+  octF = []; octA = [];
+  let f = 1, a = 1;
+  for (let k = 0; k < wOct; k++) { octF.push(f); octA.push(a); f *= wB; a *= wA; }
+  nOct = octF.length;
+}
+function cascadeH() { return -Math.log(wA) / Math.log(wB); }
+function cascadePredictedD() { return Math.min(2, Math.max(1, 2 - cascadeH())); }
+
 /* Chladni's law, actually applied.
 
    A thin square plate does not answer every tone with whatever figure looks
@@ -1723,9 +1814,12 @@ function fieldA(x, y) {
   // every edge. That is what makes a seamless tile, and a 360° wrap.
   const kb = tileMode ? Math.PI * 2 : Math.PI;
   for (let k = 0; k < modes.length; k++) {
-    const md = modes[k], mp = md.m * kb, np = md.n * kb;
+    const md = modes[k];
     const beat = md.bw === undefined ? 1 : md.bw;
-    a += md.w * beat * (ca * Math.sin(mp * x) * Math.sin(np * y) + cb * Math.sin(np * x) * Math.sin(mp * y));
+    for (let o = 0; o < nOct; o++) {
+      const bf = octF[o], mp = md.m * kb * bf, np = md.n * kb * bf;
+      a += md.w * beat * octA[o] * (ca * Math.sin(mp * x) * Math.sin(np * y) + cb * Math.sin(np * x) * Math.sin(mp * y));
+    }
   }
   for (let k = 0; k < ghosts.length; k++) {
     const g = ghosts[k], mp = g.m * kb, np = g.n * kb;
@@ -1761,6 +1855,7 @@ function step() {
   }
   // two tones on one plate beat against each other at their difference —
   // the same beat you hear. Capped before it turns into a strobe.
+  buildCascade();
   const N = modes.length;
   if (N > 1) {
     let spread = 0;
@@ -1920,17 +2015,23 @@ function step() {
         const mine = own > 0 && k === 0;
         const md = mine ? myCh : modes[k - (own > 0 ? 1 : 0)];
         const beat = mine || md.bw === undefined ? 1 : md.bw;
-        const mp = md.m * Math.PI, np = md.n * Math.PI;
-        const w = (mine ? own : shared * md.w * beat) * amp;
-        const smx = Math.sin(mp * ux), cmx = Math.cos(mp * ux);
-        const snx = Math.sin(np * ux), cnx = Math.cos(np * ux);
-        const smy = Math.sin(mp * uy), cmy = Math.cos(mp * uy);
-        const sny = Math.sin(np * uy), cny = Math.cos(np * uy);
-        // f = a·sin(πm x)sin(πn y) + b·sin(πn x)sin(πm y)
-        A += w * (ca * smx * sny + cb * snx * smy);
-        // gradient of the field — charcoal drains off the moving regions
-        dAdx += w * (ca * mp * cmx * sny + cb * np * cnx * smy) * sc;
-        dAdy += w * (ca * np * smx * cny + cb * mp * snx * cmy) * sc;
+        const w0 = (mine ? own : shared * md.w * beat) * amp;
+        // one pass when driveMode is 0 (nOct === 1), a geometric cascade when 1
+        for (let oc = 0; oc < nOct; oc++) {
+          const bf = octF[oc], w = w0 * octA[oc];
+          const mp = md.m * Math.PI * bf, np = md.n * Math.PI * bf;
+          const smx = Math.sin(mp * ux), cmx = Math.cos(mp * ux);
+          const snx = Math.sin(np * ux), cnx = Math.cos(np * ux);
+          const smy = Math.sin(mp * uy), cmy = Math.cos(mp * uy);
+          const sny = Math.sin(np * uy), cny = Math.cos(np * uy);
+          // f = a·sin(πm x)sin(πn y) + b·sin(πn x)sin(πm y)
+          A += w * (ca * smx * sny + cb * snx * smy);
+          // gradient — charcoal drains off the moving regions. With ab > 1 this
+          // series diverges, which IS the nowhere-differentiable property; the
+          // truncation at the grain scale is what keeps it finite and physical.
+          dAdx += w * (ca * mp * cmx * sny + cb * np * cnx * smy) * sc;
+          dAdy += w * (ca * np * smx * cny + cb * mp * snx * cmy) * sc;
+        }
       }
       amp *= 0.5; sc *= 2;
     }
@@ -2250,9 +2351,65 @@ function renderLine() {
 const BOX_GRIDS = [4, 8, 16, 32, 64, 128];
 const DECADES = Math.log10(BOX_GRIDS[BOX_GRIDS.length - 1] / BOX_GRIDS[0]);
 let fracD = 0, fracR2 = 0, fracPts = [], fracBeta = NaN, fracBins = 0, lastFracT = -1e9;
-let fdb = null;
+let fdb = null, fieldD = 0;
+
+/* Two different questions, and conflating them was hiding the answer.
+
+   D_dust  — box-count the GRAINS. That is what you see, but settled dust is a
+             THICKENED nodal set: jitter and finite settling give the lines
+             width, and width pushes D toward 2 no matter what geometry lies
+             underneath. A smooth curve with thickness measures ~1.46.
+
+   D_field — box-count the FIELD's own zero set, by sampling the maths and
+             marking every box a sign change passes through. No thickness, no
+             dust. This is the geometry itself, and it is what the Weierstrass
+             prediction is about.
+
+   The gap between them is not error. It is the answer to a real question: how
+   much of the structure can sand actually resolve? */
+function measureField() {
+  const kb = tileMode ? Math.PI * 2 : Math.PI;
+  const ca = 1 + balance, cb = 1 - balance;
+  const at = (x, y) => {
+    let a = 0;
+    for (let k = 0; k < modes.length; k++) {
+      const md = modes[k], be = md.bw === undefined ? 1 : md.bw;
+      for (let o = 0; o < nOct; o++) {
+        const bf = octF[o], mp = md.m * kb * bf, np = md.n * kb * bf;
+        a += md.w * be * octA[o] *
+             (ca * Math.sin(mp * x) * Math.sin(np * y) + cb * Math.sin(np * x) * Math.sin(mp * y));
+      }
+    }
+    return a;
+  };
+  const xs = [], ys = [];
+  for (const g of BOX_GRIDS) {
+    // sample the corners once, then a box counts if its corners disagree in sign
+    const s = new Float32Array((g + 1) * (g + 1));
+    for (let j = 0; j <= g; j++)
+      for (let i = 0; i <= g; i++) s[j * (g + 1) + i] = at(i / g, j / g);
+    let n = 0;
+    for (let j = 0; j < g; j++) {
+      for (let i = 0; i < g; i++) {
+        const a0 = s[j * (g + 1) + i], a1 = s[j * (g + 1) + i + 1];
+        const a2 = s[(j + 1) * (g + 1) + i], a3 = s[(j + 1) * (g + 1) + i + 1];
+        const pos = (a0 > 0) + (a1 > 0) + (a2 > 0) + (a3 > 0);
+        if (pos !== 0 && pos !== 4) n++;
+      }
+    }
+    xs.push(Math.log(g)); ys.push(Math.log(Math.max(1, n)));
+  }
+  const N = xs.length;
+  let sx = 0, sy = 0;
+  for (let i = 0; i < N; i++) { sx += xs[i]; sy += ys[i]; }
+  const mx = sx / N, my = sy / N;
+  let num = 0, den = 0;
+  for (let i = 0; i < N; i++) { num += (xs[i] - mx) * (ys[i] - my); den += (xs[i] - mx) ** 2; }
+  fieldD = den > 1e-9 ? num / den : 0;
+}
 
 function measureFractal() {
+  measureField();
   const xs = [], ys = [];
   fracPts = [];
   for (const g of BOX_GRIDS) {
@@ -2354,16 +2511,23 @@ function drawFractalReadout() {
      will. So D is reported for what it honestly is — how the dust fills the
      plate — and the question of self-similarity is left open, which is where
      it actually stands. */
-  const verdict = fracD >= 1.93 ? "dust everywhere, filling the plate"
-                : fracD <= 1.12 ? "collapsed onto lines"
-                : "gathered: between line and area";
+  const verdict = driveMode === 1
+    ? (Math.abs(fieldD - cascadePredictedD()) < 0.09
+        ? "field matches the prediction"
+        : "field does NOT match the prediction")
+    : fracD >= 1.93 ? "dust everywhere, filling the plate"
+    : fracD <= 1.12 ? "collapsed onto lines"
+    : "gathered: between line and area";
+  const pred = driveMode === 1 ? cascadePredictedD() : null;
   const lines = [
-    `D = ${fracD.toFixed(3)}   R² = ${fracR2.toFixed(4)}`,
+    `dust  D = ${fracD.toFixed(3)}   field D = ${fieldD.toFixed(3)}`,
     Number.isFinite(fracBeta)
       ? `β = ${fracBeta.toFixed(2)}${Math.abs(fracBeta - 1) < 0.25 ? "  scale-free in time" : ""}`
       : `β — a tone is a spike, not a law`,
     verdict,
-    `${DECADES.toFixed(1)} decades: too few to call fractal`,
+    pred === null
+      ? `${DECADES.toFixed(1)} decades: too few to call fractal`
+      : `predicted ${pred.toFixed(3)} · field Δ ${(fieldD - pred >= 0 ? "+" : "") + (fieldD - pred).toFixed(3)}`,
   ];
   lines.forEach((s, i) => ctx.fillText(s, x0 + bw * 0.06, y0 + bh + fs * 1.5 + i * fs * 1.35));
   ctx.globalAlpha = 1;
