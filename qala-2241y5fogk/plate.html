@@ -2248,6 +2248,7 @@ function renderLine() {
    dimension, and the answer to "is this fractal?" is no over this range. The
    instrument is allowed to say so. */
 const BOX_GRIDS = [4, 8, 16, 32, 64, 128];
+const DECADES = Math.log10(BOX_GRIDS[BOX_GRIDS.length - 1] / BOX_GRIDS[0]);
 let fracD = 0, fracR2 = 0, fracPts = [], fracBeta = NaN, fracBins = 0, lastFracT = -1e9;
 let fdb = null;
 
@@ -2317,7 +2318,7 @@ function measureFractal() {
 function drawFractalReadout() {
   // the panel holds the plot AND its numbers, so nothing spills over the plate
   const pad = W * 0.03, bw = W * 0.36, fs = Math.max(9, Math.round(W * 0.0155));
-  const bh = bw * 0.46, ph = bh + fs * 4.6;
+  const bh = bw * 0.46, ph = bh + fs * 6.2;
   const x0 = W - bw - pad, y0 = pad;
   ctx.globalAlpha = 0.92;
   ctx.fillStyle = palette.bg; ctx.fillRect(x0, y0, bw, ph);
@@ -2345,17 +2346,24 @@ function drawFractalReadout() {
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = palette.grain;
   ctx.font = `${fs}px ui-monospace, Menlo, monospace`;
-  const scaleFree = fracR2 > 0.985 && fracD > 1.05 && fracD < 1.95;
-  const verdict = fracR2 <= 0.985 ? "no single dimension here — not scale-free"
-                : fracD >= 1.95 ? "space-filling dust, not a fractal"
-                : fracD <= 1.05 ? "essentially a line"
-                : "scale-free across these boxes";
+  /* R² does NOT tell you whether this is a fractal, and an earlier version of
+     this readout claimed it did. Tested against known sets over the same six
+     box sizes: uniform random dust gives R² = 0.9999, a filled disc 0.9996, a
+     Sierpinski triangle 0.9995. All three fit a straight line beautifully and
+     only one of them is a fractal. Over 1.5 decades almost any point cloud
+     will. So D is reported for what it honestly is — how the dust fills the
+     plate — and the question of self-similarity is left open, which is where
+     it actually stands. */
+  const verdict = fracD >= 1.93 ? "dust everywhere, filling the plate"
+                : fracD <= 1.12 ? "collapsed onto lines"
+                : "gathered: between line and area";
   const lines = [
-    `box-counting  D = ${fracD.toFixed(3)}   R² = ${fracR2.toFixed(4)}`,
+    `D = ${fracD.toFixed(3)}   R² = ${fracR2.toFixed(4)}`,
     Number.isFinite(fracBeta)
-      ? `spectrum      1/f^β,  β = ${fracBeta.toFixed(2)}`
-      : `spectrum      too few bins (${fracBins}) — a tone is a spike, not a law`,
+      ? `β = ${fracBeta.toFixed(2)}${Math.abs(fracBeta - 1) < 0.25 ? "  scale-free in time" : ""}`
+      : `β — a tone is a spike, not a law`,
     verdict,
+    `${DECADES.toFixed(1)} decades: too few to call fractal`,
   ];
   lines.forEach((s, i) => ctx.fillText(s, x0 + bw * 0.06, y0 + bh + fs * 1.5 + i * fs * 1.35));
   ctx.globalAlpha = 1;
