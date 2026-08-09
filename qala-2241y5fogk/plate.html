@@ -281,12 +281,31 @@
   /* Installed on a phone there is no browser chrome, so the notch, the status
      bar and the home indicator are ours to avoid. */
   .sec-head {
-    display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+    display: flex; align-items: center; gap: 0.6rem;
     cursor: pointer; user-select: none; padding: 0.15rem 0;
   }
   .sec-head:hover .sec-caret { color: var(--violet); }
-  .sec-caret { color: var(--ash); font-size: 0.7rem; flex: none; }
+  .sec-caret { color: var(--ash); font-size: 0.7rem; flex: none; margin-left: auto; }
+  .sec-count {
+    font-family: var(--mono); font-size: 0.58rem; color: var(--ash);
+    border: 1px solid var(--line); border-radius: 999px; padding: 0.05rem 0.42rem;
+    flex: none; margin-left: auto;
+  }
+  .sec-head.shut-head .sec-count { color: var(--violet); border-color: var(--violet-deep); }
   .sec-body.shut { display: none; }
+
+  /* On touch a pale caret at the far edge is not an affordance — the whole row
+     becomes a door, and it says how much is behind it. Four shut sections were
+     hiding 25 buttons with nothing to suggest they were there. */
+  @media (pointer: coarse) {
+    .sec-head {
+      background: var(--black); border: 1px solid var(--line);
+      padding: 0.62rem 0.7rem; margin: 0.55rem 0 0.3rem; border-radius: 3px;
+      min-height: 40px;
+    }
+    .sec-head .sec-caret { font-size: 0.95rem; color: var(--screen); margin-left: 0.5rem; }
+    .sec-head.shut-head { border-color: var(--violet-deep); }
+  }
 
 
   /* ── THE DRAWER, on touch ────────────────────────────────────────────────
@@ -349,6 +368,18 @@
     .knobs .chan-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem 0.35rem; }
     .knobs .chan-body.folded { display: none; }
     .knob { touch-action: none; cursor: ns-resize; display: block; }
+
+    /* The five you reach for constantly, pinned so they are never behind a lid. */
+    #quickBar {
+      position: sticky; top: 0; z-index: 2;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.3rem;
+      padding: 0.5rem 0 0.55rem; margin-bottom: 0.1rem;
+      background: var(--stage); border-bottom: 1px solid var(--line);
+    }
+    #quickBar button {
+      min-height: 42px; font-size: 0.55rem; padding: 0.3rem 0.05rem;
+      letter-spacing: 0.06em;
+    }
     .knob:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; border-radius: 50%; }
   }
 
@@ -3145,13 +3176,20 @@ function foldSections() {
       caret.className = "sec-caret";
       caret.textContent = "▾";
       el.appendChild(caret);
+      const count = document.createElement("span");
+      count.className = "sec-count";
+      el.insertBefore(count, caret);
       const shut = coarse && index > 1;
       wrap.classList.toggle("shut", shut);
+      el.classList.toggle("shut-head", shut);
       caret.textContent = shut ? "▸" : "▾";
+      // filled in after the knobs exist, so the number is what you will actually see
+      wrap.dataset.countMe = "1";
       const toggle = (e) => {
         // the mixer's on/off button lives inside its heading — do not eat its click
         if (e.target.closest("button") && !e.target.classList.contains("sec-caret")) return;
         const now = wrap.classList.toggle("shut");
+        el.classList.toggle("shut-head", now);
         caret.textContent = now ? "▸" : "▾";
       };
       el.addEventListener("click", toggle);
@@ -3206,6 +3244,25 @@ function buildTouchDesk() {
   addEventListener("touchmove", (e) => {
     if (sx !== null && sx - e.touches[0].clientX > 34) { setOpen(true); sx = null; }
   }, { passive: true });
+
+  /* The five things you reach for constantly, pinned at the top of the drawer
+     so they are never behind a lid. They are not copies — each one forwards its
+     click to the real control, so there is still exactly one of each. */
+  const quick = document.createElement("div");
+  quick.id = "quickBar";
+  [["mic", "MIC"], ["toneA", "A"], ["toneB", "B"], ["dim", "VIEW"], ["parm", "PRINT"]]
+    .forEach(([id, label]) => {
+      const src = document.getElementById(id);
+      if (!src) return;
+      const b = document.createElement("button");
+      b.textContent = label;
+      b.addEventListener("click", () => src.click());
+      const sync = () => b.classList.toggle("armed", src.classList.contains("armed"));
+      new MutationObserver(sync).observe(src, { attributes: true, attributeFilter: ["class"] });
+      sync();
+      quick.appendChild(b);
+    });
+  aside.prepend(quick);
 
   // the knobs
   const NS = "http://www.w3.org/2000/svg";
@@ -3279,6 +3336,13 @@ function buildTouchDesk() {
   });
 }
 buildTouchDesk();
+
+/* Say how much each lid is holding. Run last, after the knobs exist. */
+document.querySelectorAll(".sec-body[data-count-me]").forEach((body) => {
+  const n = body.querySelectorAll("svg.knob, button, select").length;
+  const tag = body.previousElementSibling.querySelector(".sec-count");
+  if (tag) tag.textContent = n ? String(n) : "";
+});
 
 
 /* On a phone four open channel strips are the entire screen, so they start
