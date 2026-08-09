@@ -3872,7 +3872,21 @@ if (!reduced) loop(); else { for (let i = 0; i < 400; i++) step(); render(); }
 
   /* Offline, so the instrument outlives whatever is hosting it. */
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    addEventListener("load", async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("sw.js");
+        reg.addEventListener("updatefound", () => {
+          const sw = reg.installing;
+          if (!sw) return;
+          sw.addEventListener("statechange", () => {
+            // a newer build is ready and an old worker is still in charge —
+            // take it now rather than leaving yesterday's page on screen
+            if (sw.state === "installed" && navigator.serviceWorker.controller) location.reload();
+          });
+        });
+        reg.update();
+      } catch {}
+    });
   }
 </script>
 </body>
