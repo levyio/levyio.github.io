@@ -1,0 +1,23 @@
+{
+  "name": "Qālā — sound made visible",
+  "short_name": "Qālā",
+  "description": "A plate of charcoal that listens. Chladni figures from your microphone, a no-input mixer, and prints you can keep.",
+  "start_url": "./plate.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen"],
+  "orientation": "any",
+  "background_color": "#0a0a0c",
+  "theme_color": "#0a0a0c",
+  "categories": ["music", "education", "graphics"],
+  "icons": [
+    { "src": "icons/qala-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/qala-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/qala-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "The instrument", "url": "./plate.html" },
+    { "name": "How it works", "url": "./science.html" },
+    { "name": "The studio", "url": "./studio.html" }
+  ]
+}
