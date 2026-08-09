@@ -4,7 +4,17 @@
 <meta charset="utf-8" />
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
 <meta name="referrer" content="no-referrer" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0a0c" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/qala-192.png" />
+<!-- iOS has no manifest support worth the name: it needs its own tags, and it
+     will only install from the Share sheet — there is no install prompt. -->
+<link rel="apple-touch-icon" href="icons/qala-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Qālā" />
 <title>QĀLĀ — the instrument</title>
 <style>
   :root {
@@ -268,6 +278,35 @@
      catch, and room between rows so you do not grab the wrong slider.
      This must sit last — the base slider rules come later in the sheet and
      would otherwise win on equal specificity. */
+  /* Installed on a phone there is no browser chrome, so the notch, the status
+     bar and the home indicator are ours to avoid. */
+  .sec-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+    cursor: pointer; user-select: none; padding: 0.15rem 0;
+  }
+  .sec-head:hover .sec-caret { color: var(--violet); }
+  .sec-caret { color: var(--ash); font-size: 0.7rem; flex: none; }
+  .sec-body.shut { display: none; }
+
+  #installTip {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.7rem 0.9rem calc(0.7rem + env(safe-area-inset-bottom));
+    background: var(--stage); border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.06em; color: var(--text);
+  }
+  /* display:flex beats the hidden attribute outright, so say it explicitly —
+     the same trap that left every channel strip open a moment ago */
+  #installTip[hidden] { display: none; }
+  #installTip span { flex: 1; line-height: 1.5; }
+  #installTip button { flex: none; }
+
+  @supports (padding: max(0px)) {
+    header { padding-top: max(0.7rem, env(safe-area-inset-top)); }
+    aside  { padding-bottom: max(3rem, calc(env(safe-area-inset-bottom) + 2rem)); }
+    body   { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  }
+
   @media (pointer: coarse) {
     /* The element grows to a finger; the LINE stays a hairline. Making the
        input itself 26px tall would paint a 26px bar, so the background moves
@@ -3010,6 +3049,67 @@ for (let c = 0; c < 4; c++) {
     if (CH[c]) CH[c].colour = hexToRgb(e.target.value);
   });
 }
+/* THE DESK, ON A PHONE.
+
+   119 controls is right for a desk and wrong for a hand. The panel measured
+   4,893px against a 311px window — sixteen screens of scrolling to reach the
+   far end, with no way to know what is down there.
+
+   So each heading becomes a lid. The sections are not wrapped in the markup
+   (headings and strips are siblings), so they are grouped here at load rather
+   than restructuring the HTML by hand. On touch everything starts shut except
+   the mixer; on a mouse everything starts open, because there is room. */
+function foldSections() {
+  const aside = document.querySelector("aside");
+  const coarse = matchMedia("(pointer: coarse)").matches;
+  const kids = [...aside.children];
+  const isHead = (el) => el.classList.contains("panel-head")
+    || (el.classList.contains("mono") && el.tagName === "SPAN");
+
+  let group = null, index = 0;
+  kids.forEach((el) => {
+    if (isHead(el)) {
+      index += 1;
+      const wrap = document.createElement("div");
+      wrap.className = "sec-body";
+      el.after(wrap);
+      group = wrap;
+      el.classList.add("sec-head");
+      el.setAttribute("role", "button");
+      el.setAttribute("tabindex", "0");
+      const caret = document.createElement("span");
+      caret.className = "sec-caret";
+      caret.textContent = "▾";
+      el.appendChild(caret);
+      const shut = coarse && index > 1;
+      wrap.classList.toggle("shut", shut);
+      caret.textContent = shut ? "▸" : "▾";
+      const toggle = (e) => {
+        // the mixer's on/off button lives inside its heading — do not eat its click
+        if (e.target.closest("button") && !e.target.classList.contains("sec-caret")) return;
+        const now = wrap.classList.toggle("shut");
+        caret.textContent = now ? "▸" : "▾";
+      };
+      el.addEventListener("click", toggle);
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); }
+      });
+    } else if (group) {
+      group.appendChild(el);
+    }
+  });
+}
+foldSections();
+
+/* On a phone four open channel strips are the entire screen, so they start
+   folded and the header still shows each one's reading. On a mouse they stay
+   open, because there is room. */
+if (matchMedia("(pointer: coarse)").matches) {
+  // .folded, not [hidden] — .chan-body sets display:flex, which beats the
+  // hidden attribute outright and would leave every strip open
+  document.querySelectorAll(".chan-body").forEach((b) => b.classList.add("folded"));
+  document.querySelectorAll(".chan-fold[data-fold]").forEach((b) => { b.textContent = "▸"; });
+}
 // fold a channel away, Ableton-style; the header keeps showing its reading
 document.querySelectorAll(".chan-fold").forEach((b) => {
   b.addEventListener("click", () => {
@@ -3471,6 +3571,51 @@ $("v-count").textContent = activeCount.toLocaleString();
 
 resize(); seed();
 if (!reduced) loop(); else { for (let i = 0; i < 400; i++) step(); render(); }
+</script>
+<div id="installTip" hidden>
+  <span></span><button id="installGo" hidden>Install</button><button id="installNo">✕</button>
+</div>
+<script>
+  /* Android fires an install prompt we can catch. iOS never does — there it has
+     to be the Share sheet, by hand, so say so rather than showing a dead button. */
+  (function () {
+    const tip = document.getElementById("installTip");
+    const txt = tip.querySelector("span");
+    const go = document.getElementById("installGo");
+    let deferred = null;
+    const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+    let dismissed = false;
+    try { dismissed = localStorage.getItem("qala-install-tip") === "off"; } catch {}
+    const iOS = /iP(hone|ad|od)/.test(navigator.platform)
+      || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+
+    function show(msg, withButton) {
+      if (standalone || dismissed) return;
+      txt.textContent = msg;
+      go.hidden = !withButton;
+      tip.hidden = false;
+    }
+    addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault(); deferred = e;
+      show("Install Qālā — it runs offline once it is on your home screen.", true);
+    });
+    go.addEventListener("click", async () => {
+      tip.hidden = true;
+      if (deferred) { deferred.prompt(); deferred = null; }
+    });
+    document.getElementById("installNo").addEventListener("click", () => {
+      tip.hidden = true;
+      try { localStorage.setItem("qala-install-tip", "off"); } catch {}
+    });
+    if (iOS && !standalone) {
+      setTimeout(() => show("Add Qālā to your home screen: Share ⬆︎ then “Add to Home Screen”. It runs offline after that.", false), 2500);
+    }
+  })();
+
+  /* Offline, so the instrument outlives whatever is hosting it. */
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
 </script>
 </body>
 </html>
