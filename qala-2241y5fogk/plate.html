@@ -308,79 +308,79 @@
   }
 
 
-  /* ── THE DRAWER, on touch ────────────────────────────────────────────────
-     A phone has one screen and the plate should have it. The desk slides in
-     over the top and back out again, so nothing is ever squeezed: the plate
-     stays whole, and the controls arrive when asked for. */
-  @media (pointer: coarse) {
-    main { grid-template-columns: 1fr; grid-template-rows: 1fr; }
-    aside {
-      position: fixed; top: 0; right: 0; bottom: 0; z-index: 55;
-      width: min(86vw, 400px);
-      background: var(--stage);
-      border-left: 1px solid var(--line); border-top: none;
-      transform: translateX(100%);
-      transition: transform 0.26s cubic-bezier(.4,0,.2,1);
-      overflow-y: auto; overscroll-behavior: contain;
-      padding-right: max(0.8rem, env(safe-area-inset-right));
-      box-shadow: -18px 0 40px rgba(0,0,0,0.5);
-    }
-    aside.open { transform: translateX(0); }
-    #drawerTab {
-      position: fixed; z-index: 56; right: 0; top: 50%;
-      transform: translateY(-50%);
-      width: 30px; min-height: 118px;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--stage); color: var(--ash);
-      border: 1px solid var(--line); border-right: none;
-      border-radius: 6px 0 0 6px;
-      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.22em;
-      writing-mode: vertical-rl; text-orientation: mixed;
-      cursor: pointer; padding: 0.6rem 0;
-    }
-    #drawerTab.open { right: min(86vw, 400px); }
-    #drawerScrim {
-      position: fixed; inset: 0; z-index: 54; background: rgba(0,0,0,0.45);
-      opacity: 0; pointer-events: none; transition: opacity 0.26s;
-    }
-    #drawerScrim.on { opacity: 1; pointer-events: auto; }
-    #drawerScrim[hidden] { display: none; }
+  /* ── THE SHEET, on touch ─────────────────────────────────────────────────
+     A side drawer took the whole screen and left the plate a sliver, so you
+     could not see what a knob was doing while you turned it. For an instrument
+     that is the whole point.
 
-    /* ── KNOBS ──────────────────────────────────────────────────────────
-       A slider's precision is capped by the width of the screen. A knob is
-       driven by vertical drag, which has no such limit — drag past the knob
-       and keep going. So the strips become a grid of knobs, and the range
-       inputs stay exactly where they are, driving everything as before. */
+     So the desk lies along the bottom and the plate shrinks to fit above it —
+     both visible at once. Three heights: a peek that is only the five pinned
+     buttons, a third of the screen, and two thirds for deep work. Tap the grip
+     to cycle, or drag it anywhere and it snaps to the nearest. */
+  @media (pointer: coarse) {
+    :root { --sheet: 38vh; }
+    main { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    body.sheet main { padding-bottom: var(--sheet); }
+
+    aside {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 55;
+      height: var(--sheet);
+      background: var(--stage);
+      border-left: none; border-top: 1px solid var(--line);
+      border-radius: 12px 12px 0 0;
+      transform: translateY(100%);
+      /* transform only. Animating height would relayout 60-odd knobs on every
+         frame, which stutters on a phone — the resize snaps instead. */
+      transition: transform 0.24s cubic-bezier(.4,0,.2,1);
+      overflow-y: auto; overscroll-behavior: contain;
+      padding: 0 0.75rem max(1rem, env(safe-area-inset-bottom));
+      box-shadow: 0 -18px 40px rgba(0,0,0,0.55);
+    }
+    body.sheet aside { transform: translateY(0); }
+
+    #sheetGrip {
+      position: sticky; top: 0; z-index: 3;
+      display: flex; align-items: center; justify-content: center;
+      height: 26px; margin: 0 -0.75rem; cursor: grab;
+      background: var(--stage); touch-action: none;
+    }
+    #sheetGrip::before {
+      content: ""; width: 42px; height: 4px; border-radius: 999px; background: var(--line);
+    }
+    #sheetGrip:active::before { background: var(--violet); }
+
+    #quickBar {
+      position: sticky; top: 26px; z-index: 2;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.3rem;
+      padding: 0.15rem 0 0.5rem; background: var(--stage);
+      border-bottom: 1px solid var(--line);
+    }
+    #quickBar button {
+      min-height: 40px; font-size: 0.55rem; padding: 0.3rem 0.05rem; letter-spacing: 0.06em;
+    }
+
+    /* Knobs: a slider's precision is capped by the width of the screen, a knob's
+       is not — it is driven by vertical drag. The range inputs stay put. */
     .knobs .sec-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem 0.35rem; }
-    /* equal specificity to .sec-body.shut and later in the sheet, so it would
-       win and hold every lid open — the third time in this change that a
-       display rule quietly beat a hide rule */
     .knobs .sec-body.shut { display: none; }
-    .knobs .sec-body > .btnrow,
-    .knobs .sec-body > .chan { grid-column: 1 / -1; }
+    .knobs .sec-body > .btnrow, .knobs .sec-body > .chan { grid-column: 1 / -1; }
     .knobs .strip { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; margin: 0; }
     .knobs .strip-head, .knobs .row2 { flex-direction: column; align-items: center; gap: 0; width: 100%; }
     .knobs .strip .mono { font-size: 0.55rem; letter-spacing: 0.07em; text-align: center; line-height: 1.25; }
     .knobs .strip input[type="range"] {
-      position: absolute; width: 1px; height: 1px; opacity: 0;
-      pointer-events: none;                      /* the knob drives it now */
+      position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
     }
     .knobs .chan-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem 0.35rem; }
     .knobs .chan-body.folded { display: none; }
     .knob { touch-action: none; cursor: ns-resize; display: block; }
-
-    /* The five you reach for constantly, pinned so they are never behind a lid. */
-    #quickBar {
-      position: sticky; top: 0; z-index: 2;
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.3rem;
-      padding: 0.5rem 0 0.55rem; margin-bottom: 0.1rem;
-      background: var(--stage); border-bottom: 1px solid var(--line);
-    }
-    #quickBar button {
-      min-height: 42px; font-size: 0.55rem; padding: 0.3rem 0.05rem;
-      letter-spacing: 0.06em;
-    }
     .knob:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; border-radius: 50%; }
+
+    .sec-head {
+      background: var(--black); border: 1px solid var(--line);
+      padding: 0.62rem 0.7rem; margin: 0.5rem 0 0.3rem; border-radius: 3px; min-height: 40px;
+    }
+    .sec-head .sec-caret { font-size: 0.95rem; color: var(--screen); margin-left: 0.5rem; }
+    .sec-head.shut-head { border-color: var(--violet-deep); }
   }
 
   #installTip {
@@ -3216,34 +3216,46 @@ function buildTouchDesk() {
   const aside = document.querySelector("aside");
   aside.classList.add("knobs");
 
-  // the drawer
-  const tab = document.createElement("button");
-  tab.id = "drawerTab"; tab.textContent = "DESK";
-  tab.setAttribute("aria-expanded", "false");
-  const scrim = document.createElement("div");
-  scrim.id = "drawerScrim"; scrim.hidden = true;
-  document.body.append(scrim, tab);
-  const setOpen = (on) => {
-    aside.classList.toggle("open", on);
-    tab.classList.toggle("open", on);
-    tab.textContent = on ? "CLOSE" : "DESK";
-    tab.setAttribute("aria-expanded", String(on));
-    scrim.hidden = false;
-    requestAnimationFrame(() => scrim.classList.toggle("on", on));
-    if (!on) setTimeout(() => { if (!aside.classList.contains("open")) scrim.hidden = true; }, 280);
-    setTimeout(resize, 300);
+  // the sheet: a grip with three heights, so the plate is never hidden
+  const HEIGHTS = ["66px", "38vh", "74vh"];
+  let hIdx = 1, dragging = false, moved = false;
+  const grip = document.createElement("div");
+  grip.id = "sheetGrip";
+  grip.setAttribute("role", "button");
+  grip.setAttribute("tabindex", "0");
+  grip.setAttribute("aria-label", "Resize the desk");
+  aside.prepend(grip);
+  document.body.classList.add("sheet");
+  const applyHeight = () => {
+    document.documentElement.style.setProperty("--sheet", HEIGHTS[hIdx]);
+    setTimeout(resize, 280);
   };
-  tab.addEventListener("click", () => setOpen(!aside.classList.contains("open")));
-  scrim.addEventListener("click", () => setOpen(false));
-  // a swipe from the right edge pulls it out; a swipe right on it puts it back
-  let sx = null;
-  addEventListener("touchstart", (e) => {
-    const x = e.touches[0].clientX;
-    sx = (!aside.classList.contains("open") && x > innerWidth - 26) ? x : null;
-  }, { passive: true });
-  addEventListener("touchmove", (e) => {
-    if (sx !== null && sx - e.touches[0].clientX > 34) { setOpen(true); sx = null; }
-  }, { passive: true });
+  applyHeight();
+  grip.addEventListener("pointerdown", (e) => {
+    dragging = true; moved = false; grip.setPointerCapture(e.pointerId);
+  });
+  grip.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    moved = true;
+    const frac = 1 - e.clientY / innerHeight;
+    document.documentElement.style.setProperty("--sheet", `${Math.max(7, Math.min(86, frac * 100))}vh`);
+  });
+  grip.addEventListener("pointerup", (e) => {
+    if (!dragging) return;
+    dragging = false;
+    if (moved) {
+      const frac = 1 - e.clientY / innerHeight;
+      hIdx = frac < 0.18 ? 0 : frac < 0.56 ? 1 : 2;
+    } else {
+      hIdx = (hIdx + 1) % HEIGHTS.length;
+    }
+    applyHeight();
+  });
+  grip.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault(); hIdx = (hIdx + 1) % HEIGHTS.length; applyHeight();
+    }
+  });
 
   /* The five things you reach for constantly, pinned at the top of the drawer
      so they are never behind a lid. They are not copies — each one forwards its
@@ -3262,7 +3274,9 @@ function buildTouchDesk() {
       sync();
       quick.appendChild(b);
     });
-  aside.prepend(quick);
+  // after the grip, not before it — prepending would put the quick bar on top
+  // of the handle you drag, which is the wrong way round
+  grip.after(quick);
 
   // the knobs
   const NS = "http://www.w3.org/2000/svg";
