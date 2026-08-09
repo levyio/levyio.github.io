@@ -4,7 +4,17 @@
 <meta charset="utf-8" />
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
 <meta name="referrer" content="no-referrer" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0a0c" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/qala-192.png" />
+<!-- iOS has no manifest support worth the name: it needs its own tags, and it
+     will only install from the Share sheet — there is no install prompt. -->
+<link rel="apple-touch-icon" href="icons/qala-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Qālā" />
 <title>Qālā</title>
 <style>
   :root {
@@ -168,6 +178,12 @@
     if (reduced) { tick(); return; }
     (function loop() { tick(); requestAnimationFrame(loop); })();
   })();
+</script>
+<script>
+  /* Offline, so the instrument outlives whatever is hosting it. */
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
 </script>
 </body>
 </html>
