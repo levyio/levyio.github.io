@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Sierpinski gasket, played</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a href="../process.html" style="position:fixed;left:0;top:0;z-index:99;font:0.58rem/1 ui-monospace,Menlo,monospace;letter-spacing:0.18em;text-transform:uppercase;color:#868794;text-decoration:none;padding:0.55rem 0.8rem;background:rgba(8,9,15,0.8);border-right:1px solid #262a3c;border-bottom:1px solid #262a3c">◉ The Process</a>
+
+
+<header>
+  <nav class="crumbs"><a href="roughness.html">roughness is not fractality →</a></nav>
+  <h1>The Sierpinski gasket, played</h1>
+  <p class="sub">A fractal drum whose overtones are not approximated. Strike it anywhere.</p>
+</header>
+
+<main>
+  <!-- ── left: the drum ─────────────────────────────────────────────── -->
+  <section id="stage">
+    <div id="canvasWrap">
+      <canvas id="drum" width="900" height="800"></canvas>
+      <div id="hint">click the gasket to strike it</div>
+    </div>
+
+    <div class="controls">
+      <button id="strikeRandom" class="primary">Strike</button>
+      <button id="sweep">Play the first 12 modes</button>
+      <button id="stopAll">Stop</button>
+      <label class="ctl">level
+        <select id="level">
+          <option value="3">3 &mdash; 39 modes</option>
+          <option value="4">4 &mdash; 120 modes</option>
+          <option value="5" selected>5 &mdash; 363 modes</option>
+          <option value="6">6 &mdash; 1092 modes (slow)</option>
+        </select>
+      </label>
+      <label class="ctl">modes rendered
+        <input id="nmodes" type="range" min="8" max="363" step="1" value="96">
+        <output id="nmodesOut">96</output>
+      </label>
+    </div>
+
+    <p class="caption">
+      Colour is the displacement of the selected eigenmode at each vertex
+      &mdash; <span class="pos">positive</span>, <span class="neg">negative</span>.
+      The ring marks where you last struck.
+      Corner vertices are open circles: they are clamped to zero and are not
+      part of the problem.
+    </p>
+  </section>
+
+  <!-- ── right: the numbers, always ─────────────────────────────────── -->
+  <section id="panel">
+
+    <div id="verdict" class="card verdict pending">
+      <div class="vhead"><span id="verdictMark">…</span><strong id="verdictLine">running self-test</strong></div>
+      <ul id="testList"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Measured <span class="tag measured">measured</span></h2>
+      <table class="kv">
+        <tr><td>level</td><td id="mLevel">&mdash;</td><td class="pred">predicted</td></tr>
+        <tr><td>vertices</td><td id="mVerts">&mdash;</td><td id="pVerts" class="pred">&mdash;</td></tr>
+        <tr><td>interior (the drum)</td><td id="mInt">&mdash;</td><td id="pInt" class="pred">&mdash;</td></tr>
+        <tr><td>&lambda;<sub>1</sub></td><td id="mLmin">&mdash;</td><td class="pred">&mdash;</td></tr>
+        <tr><td>&lambda;<sub>max</sub></td><td id="mLmax">&mdash;</td><td class="pred">6 exactly</td></tr>
+        <tr><td>solve time</td><td id="mTime">&mdash;</td><td class="pred">&mdash;</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Decimation <span class="tag measured">measured vs predicted</span></h2>
+      <p class="note">
+        &lambda;<sub>m&minus;1</sub> = &lambda;<sub>m</sub>(5 &minus; &lambda;<sub>m</sub>).
+        Every eigenvalue at this level must either descend from the level below
+        it, or be born at 5 or 6 &mdash; the values where the quadratic is
+        singular. Nothing else is allowed.
+      </p>
+      <table class="kv">
+        <tr><td>descended</td><td id="mDesc">&mdash;</td><td id="pDesc" class="pred">&mdash;</td></tr>
+        <tr><td>born</td><td id="mBorn">&mdash;</td><td id="pBorn" class="pred">&mdash;</td></tr>
+        <tr><td>&nbsp;&nbsp;at &lambda; = 5</td><td id="mB5">&mdash;</td><td id="pB5" class="pred">&mdash;</td></tr>
+        <tr><td>&nbsp;&nbsp;at &lambda; = 6</td><td id="mB6">&mdash;</td><td id="pB6" class="pred">&mdash;</td></tr>
+        <tr><td>born anywhere else</td><td id="mBoff">&mdash;</td><td class="pred">0</td></tr>
+        <tr><td>max residual</td><td id="mResid">&mdash;</td><td class="pred">&lt; 1e&minus;6</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Convergence <span class="tag measured">measured</span></h2>
+      <p class="note">
+        A finite level is a discretisation of the gasket, so the overtone ratios
+        are approximations that converge as the level grows. This is the error
+        bar on what you are hearing.
+      </p>
+      <table class="kv" id="convTable"></table>
+      <p class="note">
+        Renormalisation constant &lambda;<sub>1</sub>(m&minus;1)/&lambda;<sub>1</sub>(m):
+        <span id="mRenorm" class="num">&mdash;</span>
+        <span class="pred">predicted exactly 5</span>
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Stated, not measured <span class="tag stated">chosen</span></h2>
+      <p class="note">
+        These are the only invented numbers on this page. Every frequency
+        <em>ratio</em> comes from the eigenvalues; these set overall pitch,
+        how fast it dies, and how much gets rendered.
+      </p>
+      <table class="kv">
+        <tr><td>f<sub>0</sub> (pitch of &lambda;<sub>1</sub>)</td>
+            <td><input id="f0" type="number" value="110" min="20" max="880" step="1"> Hz</td><td></td></tr>
+        <tr><td>&tau;<sub>0</sub> (decay of &lambda;<sub>1</sub>)</td>
+            <td><input id="tau0" type="number" value="2.5" min="0.2" max="8" step="0.1"> s</td><td></td></tr>
+        <tr><td>damping exponent p</td>
+            <td><input id="pexp" type="number" value="1" min="0" max="2" step="0.1"></td><td></td></tr>
+        <tr><td>f<sub>k</sub></td><td colspan="2" class="formula">f<sub>0</sub>&middot;&radic;(&lambda;<sub>k</sub>/&lambda;<sub>1</sub>)</td></tr>
+        <tr><td>&tau;<sub>k</sub></td><td colspan="2" class="formula">&tau;<sub>0</sub>&middot;(f<sub>0</sub>/f<sub>k</sub>)<sup>p</sup></td></tr>
+        <tr><td>amplitude</td><td colspan="2" class="formula">u<sub>k</sub>(x<sub>0</sub>)<sup>2</sup> / &omega;<sub>k</sub></td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Last strike <span class="tag measured">measured</span></h2>
+      <table class="kv">
+        <tr><td>struck at vertex</td><td id="sSite">&mdash;</td><td></td></tr>
+        <tr><td>modes rendered</td><td id="sRendered">&mdash;</td><td class="pred">of <span id="sTotal">&mdash;</span></td></tr>
+        <tr><td>strike energy captured</td><td id="sEnergy">&mdash;</td><td class="pred">truncation, disclosed</td></tr>
+        <tr><td>frequency range</td><td id="sRange">&mdash;</td><td></td></tr>
+        <tr><td>above Nyquist, dropped</td><td id="sAliased">&mdash;</td><td></td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>The spectrum <span class="tag measured">measured</span></h2>
+      <p class="note">Click a row to see that eigenmode and hear it alone.</p>
+      <div id="spectrumWrap"><table id="spectrum">
+        <thead><tr><th>k</th><th>&lambda;<sub>k</sub></th><th>f<sub>k</sub></th>
+          <th>f<sub>k</sub>/f<sub>1</sub></th><th>origin</th><th>u(x<sub>0</sub>)&sup2;</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <h2>What this is</h2>
+      <p class="note">
+        The gasket's Laplacian spectrum is not solved numerically and then
+        trusted &mdash; it is <em>generated</em> by a quadratic recursion, so
+        the overtone series is exact in a way no ordinary drum's is. The
+        eigenvalues here are computed twice, by two unrelated routes, and the
+        page refuses to claim agreement it has not checked.
+      </p>
+      <p class="note">
+        A Koch drum's eigenfunctions were drawn in 1996. As far as six searches
+        could establish, a fractal drum's actual eigenvalues have not been
+        played. Absence of a search result is weak evidence, so treat that as a
+        claim about what we could find, not about what exists.
+        See <code>docs/PRIOR-ART.md</code>.
+      </p>
+      <p class="note">
+        Convention: interior vertices have degree 4, corners are clamped, and
+        M = 4I &minus; A. Elsewhere you will see &lambda;(5 &minus; 4&lambda;)
+        for the normalised Laplacian, whose eigenvalues are these divided by
+        four. Same relation, different scaling.
+      </p>
+    </div>
+
+  </section>
+</main>
+
+<script src="js/eigen.js"></script>
+<script src="js/gasket.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/selftest.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
