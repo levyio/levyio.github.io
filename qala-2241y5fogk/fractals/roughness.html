@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roughness is not fractality</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a href="../process.html" style="position:fixed;left:0;top:0;z-index:99;font:0.58rem/1 ui-monospace,Menlo,monospace;letter-spacing:0.18em;text-transform:uppercase;color:#868794;text-decoration:none;padding:0.55rem 0.8rem;background:rgba(8,9,15,0.8);border-right:1px solid #262a3c;border-bottom:1px solid #262a3c">◉ The Process</a>
+
+
+<header>
+  <nav class="crumbs"><a href="index.html">← the gasket drum</a></nav>
+  <h1>Roughness is not fractality</h1>
+  <p class="sub">Box-counting the graphs of rough functions, live — with the
+  counter-example that looks fractal and is not.</p>
+</header>
+
+<main>
+  <!-- ── left: graph + measurement plot ─────────────────────────────── -->
+  <section id="stage">
+    <canvas id="graph" width="900" height="430"></canvas>
+    <canvas id="loglog" width="900" height="330"></canvas>
+
+    <div class="controls">
+      <label class="ctl">function
+        <select id="fn">
+          <option value="weier" selected>Weierstrass Σ aᵏcos(bᵏπx)</option>
+          <option value="takagi">Takagi — the counter-example</option>
+          <option value="riemann">Riemann Σ sin(n²πx)/n²</option>
+          <option value="sine">sine — smooth control</option>
+          <option value="line">line — closed-form control</option>
+        </select>
+      </label>
+      <label class="ctl" id="aCtl">a
+        <input id="a" type="range" min="0.30" max="0.95" step="0.01" value="0.70">
+        <output id="aOut">0.70</output>
+      </label>
+      <label class="ctl" id="bCtl">b
+        <input id="b" type="range" min="1.2" max="5.0" step="0.1" value="2.0">
+        <output id="bOut">2.0</output>
+      </label>
+      <label class="ctl">show boxes at
+        <select id="showg">
+          <option value="0">off</option>
+          <option value="16">16</option>
+          <option value="32" selected>32</option>
+          <option value="64">64</option>
+          <option value="128">128</option>
+        </select>
+      </label>
+    </div>
+
+    <p class="caption">
+      Top: the function, with the <span class="boxes">occupied boxes</span> the
+      measurement is actually counting at the chosen grid. Bottom: log₂ N(g)
+      against log₂ g — the slope of the <span class="fitline">fit</span> is the
+      measured dimension; the <span class="predline">dashed line</span> is the
+      predicted slope, drawn before the count.
+    </p>
+  </section>
+
+  <!-- ── right: the numbers ─────────────────────────────────────────── -->
+  <section id="panel">
+
+    <div id="verdict" class="card verdict pending">
+      <div class="vhead"><span id="verdictMark">…</span><strong id="verdictLine">running self-test</strong></div>
+      <ul id="testList"></ul>
+    </div>
+
+    <div class="card">
+      <h2>This function</h2>
+      <table class="kv">
+        <tr><td>definition</td><td id="fDef" colspan="2" class="formula">—</td></tr>
+        <tr><td>predicted D</td><td id="fPred">—</td><td id="fPredHow" class="pred">—</td></tr>
+        <tr><td>measured D</td><td id="fMeas">—</td><td class="pred">box-count slope, 16→1024</td></tr>
+        <tr><td>Δ</td><td id="fDelta">—</td><td id="fDeltaNote" class="pred">—</td></tr>
+        <tr><td>compute time</td><td id="fTime">—</td><td class="pred">—</td></tr>
+      </table>
+      <p class="note" id="fVerdict" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Box counts <span class="tag measured">measured</span></h2>
+      <table class="kv" id="countTable"></table>
+      <p class="note">
+        The right column is the local slope between successive grids —
+        log₂ of the ratio. A scale-invariant graph holds its slope; watch what
+        Takagi's does. (This is evidence, not a verdict: Riemann's slopes also
+        wander. The verdict is always predicted-vs-measured.)
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Why the measurement reads high <span class="tag measured">measured</span></h2>
+      <p class="note">
+        Box-counting at finite resolution is biased: a smooth line measures
+        <span class="num" id="lineBias">—</span>, not 1.000, on this exact
+        pipeline. That bias is measured, on screen, and applies to every number
+        above — it is why Takagi reads <span class="num">1.086</span> against a
+        theorem that says exactly 1, and why the Weierstrass measurements sit a
+        few hundredths <em>below</em> their predictions. A tool that hid this
+        would be lying with true numbers.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>What this is</h2>
+      <p class="note">
+        Takagi's function is continuous everywhere, differentiable nowhere, and
+        visibly rough — and its box dimension is exactly 1, by theorem. It is
+        not a fractal. Nearly every claim that sound "makes fractals" rests on
+        the error this page exists to make impossible: <em>roughness is not
+        fractality</em>, and the only way to know is to measure.
+      </p>
+      <p class="note">
+        Every count here is asserted against the same pipeline run in
+        numpy (<code>docs/verify_roughness.py</code>) — all 49 integer box
+        counts, exactly. The Weierstrass presets, Riemann, Takagi and both
+        controls carry golden values; moving the sliders leaves the validated
+        method on unvalidated parameters, which is what an instrument is for.
+      </p>
+      <p class="note">
+        The failure path is shipped: <code>?fault=prediction</code>,
+        <code>?fault=counts</code>, <code>?fault=golden</code>.
+      </p>
+    </div>
+
+  </section>
+</main>
+
+<script src="js/roughness.js"></script>
+<script src="js/roughness-app.js"></script>
+</body>
+</html>

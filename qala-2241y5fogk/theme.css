@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE PROCESS — shared theme
+
+   One skin across four instruments that are otherwise independent. Nothing is
+   imported, nothing is built: copy this file beside a page and link it.
+
+   The gradient runs deep blue at the head to warm amber at the foot. That is
+   not only a look — it is the order of the work. Cold, linear, held still at
+   the top; hot, nonlinear, alive at the bottom.
+
+   The frames and readouts are borrowed from instrument panels, where every
+   number on the face means something. Here they do: the figures these pages
+   print are measured, not decorative.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: dark;
+
+  /* the run, cold to hot */
+  --deep:    #070a1c;
+  --blue:    #16255f;
+  --indigo:  #33356f;
+  --dusk:    #6b4a62;
+  --rust:    #a75f3c;
+  --amber:   #cf8547;
+  --ember:   #e8ab6a;
+
+  /* the panel */
+  --ink:     #08090f;
+  --panel:   #0e1018;
+  --panel-2: #141724;
+  --line:    #262a3c;
+  --line-hot:#5a4436;
+
+  /* type */
+  --screen:  #ece9e2;
+  --text:    #c6c5c2;
+  --dim:     #868794;
+  --hot:     #cf8547;
+  --cool:    #7d92d8;
+
+  --serif: "Didot", "Bodoni 72", "Playfair Display", Georgia, serif;
+  --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* The gradient sits behind everything, fixed, so scrolling moves the content
+   through it rather than dragging it along. */
+.hud-bg {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(22,37,95,0.95) 0%, transparent 60%),
+    radial-gradient(140% 90% at 50% 110%, rgba(167,95,60,0.85) 0%, transparent 62%),
+    linear-gradient(180deg, var(--blue) 0%, var(--indigo) 26%, var(--dusk) 52%,
+                            var(--rust) 76%, var(--deep) 100%);
+}
+/* a faint scan texture, so the gradient is a surface and not a wash */
+.hud-bg::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 3px);
+  opacity: 0.5;
+}
+
+/* The fallback lives on html, not body. A background on body propagates to the
+   canvas and is painted behind everything — including a z-index:-1 child — so
+   an opaque body background hides the gradient entirely. */
+html:has(body.hud) { background: var(--ink); }
+body.hud {
+  margin: 0; background: transparent; color: var(--text);
+  font: 16px/1.6 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body.hud ::selection { background: var(--rust); color: var(--screen); }
+body.hud a { color: var(--ember); text-underline-offset: 3px; }
+
+/* ── the vocabulary ─────────────────────────────────────────────────────── */
+
+.hud-label {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--dim);
+}
+
+/* a hairline frame — the reference's boxed readouts */
+.hud-frame {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255,255,255,0.028), rgba(0,0,0,0.22));
+  backdrop-filter: blur(2px);
+}
+
+/* the readout: a bright first line over a dimmer body, as on a spec plate */
+.hud-code { border: 1px solid var(--line); background: rgba(8,9,15,0.55); }
+.hud-code .k {
+  display: block; padding: 0.5rem 0.8rem;
+  background: var(--screen); color: var(--ink);
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em;
+}
+.hud-code .v {
+  display: block; padding: 0.55rem 0.8rem;
+  font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em;
+  color: var(--dim); line-height: 1.8;
+}
+
+/* the mark: ◉ before a wordmark */
+.hud-mark { color: var(--ember); margin-right: 0.4em; }
+
+/* corner ticks, the cheapest way to make a box read as an instrument */
+.hud-ticks { position: relative; }
+.hud-ticks::before, .hud-ticks::after {
+  content: ""; position: absolute; width: 9px; height: 9px; pointer-events: none;
+  border: 1px solid var(--line-hot);
+}
+.hud-ticks::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.hud-ticks::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+.hud-rule {
+  border: 0; height: 1px; margin: 0;
+  background: linear-gradient(90deg, transparent, var(--line-hot), transparent);
+}
