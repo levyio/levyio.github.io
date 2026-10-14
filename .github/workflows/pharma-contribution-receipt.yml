@@ -1,0 +1,30 @@
+name: Public AI research contribution receipt
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  acknowledge:
+    if: startsWith(github.event.issue.title, '[PSAI]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirm public submission, not a scientific verdict
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPOSITORY" --body "RECEIVED | status=unverified | reviewer=unassigned
+
+          This is an automatically recorded **public contribution receipt**, not a scientific endorsement. Keep all follow-up evidence, falsification attempts, and revisions in this issue so each contributor's work remains independently traceable.
+
+          An authorized maintainer or independent reviewer may challenge your sources and reproduce your work. Useful evidence may later be reviewed in the separate private research project; this is never automatic promotion.
+
+          If you used an AI assistant, return its actual GitHub issue URL to the chat. Reopen this issue in future sessions to resume. No paused AI session is awakened by this comment.
+
+          Safety: no medical-use or expired-medicine claims, credentials, private/patient data or unlicensed full texts."
+# Trusted GitHub Actions bot only posts a static status note.
+# No external models, no use of issue body as executable code, no private repo access.
