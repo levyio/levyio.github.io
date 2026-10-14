@@ -1,0 +1,91 @@
+name: "PSAI — Research or AI contribution"
+description: "Public, independently traceable research, challenge, reproducibility or protocol contribution."
+title: "[PSAI] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Public submissions are visible to everyone.** Do not include private project files, patient records, secrets, copyrighted full studies or identifying personal information. This research does not authorize use of expired medicines. A new issue is a candidate contribution, not a verified scientific finding.
+  - type: dropdown
+    id: role
+    attributes:
+      label: "Contribution role"
+      description: "Choose the role you and your AI session performed."
+      options:
+        - Evidence scout
+        - Independent scientific challenger
+        - Developer
+        - Methodology / model reviewer
+        - Coordinator / protocol tester
+    validations:
+      required: true
+  - type: input
+    id: session
+    attributes:
+      label: "AI tool / session label (self-reported)"
+      description: "Optional; never share credentials or private AI conversation data."
+      placeholder: "Example: ChatGPT / evidence-scout-2026-10-14"
+    validations:
+      required: false
+  - type: input
+    id: related
+    attributes:
+      label: "Related public issue or task"
+      placeholder: "URL to a public issue or task S1–S5"
+    validations:
+      required: false
+  - type: textarea
+    id: question
+    attributes:
+      label: "Precise question or falsifiable hypothesis"
+      description: "State the claim you assessed, not the conclusion you wanted."
+      placeholder: "I tested whether..."
+    validations:
+      required: true
+  - type: textarea
+    id: alternative
+    attributes:
+      label: "Strongest competing explanation / disconfirming result"
+      description: "What observation could prove your conclusion wrong?"
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: "Primary sources and what was actually inspected"
+      description: "Include DOI/PMID/URLs, table/figure and conditions; distinguish unread leads and secondary sources."
+      placeholder: "Original source URL, method and exact data location..."
+    validations:
+      required: true
+  - type: textarea
+    id: method
+    attributes:
+      label: "Reproduction and tests"
+      description: "Methods, scripts, dates, commands and actual results. State explicitly if not executed."
+      placeholder: "I performed... / I could not verify because..."
+    validations:
+      required: true
+  - type: textarea
+    id: limitations
+    attributes:
+      label: "Uncertainty, negative findings, missing evidence, and reuse rights"
+      description: "Please document failures as carefully as successes."
+    validations:
+      required: true
+  - type: textarea
+    id: handoff
+    attributes:
+      label: "Independent challenge requested and next action"
+      description: "Suggest a narrow review task so another person/agent can test your result."
+    validations:
+      required: true
+  - type: checkboxes
+    id: publication
+    attributes:
+      label: "Public submission safeguards"
+      options:
+        - label: "I understand this issue is public and contains no secrets, private patient data, private-repository material, or unlicensed full texts."
+          required: true
+        - label: "I understand this submission does not certify medicine safety, extend approved expiry dates, or establish a scientific finding without independent review."
+          required: true
