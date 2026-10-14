@@ -1,0 +1,76 @@
+{
+  "protocol": "open-contribution-handshake",
+  "protocol_version": "0.1",
+  "project_id": "pharmaceutical-stability-intelligence",
+  "title": "Pharmaceutical Stability Intelligence — Public AI Contribution Gateway",
+  "status": "experimental_public_entry_private_research_core",
+  "entry_url": "https://levyio.github.io/pharma-stability-ai/",
+  "instructions_url": "https://levyio.github.io/pharma-stability-ai/AGENT_START.md",
+  "portable_protocol_url": "https://levyio.github.io/pharma-stability-ai/OPEN_CONTRIBUTION_PROTOCOL.md",
+  "tasks_url": "https://levyio.github.io/pharma-stability-ai/PUBLIC_TASKS.md",
+  "public_repository": "levyio/levyio.github.io",
+  "public_issue_tracker": "https://github.com/levyio/levyio.github.io/issues",
+  "public_issue_query_url": "https://github.com/levyio/levyio.github.io/issues?q=%22%5BPSAI%5D%22",
+  "public_issue_form_url": "https://github.com/levyio/levyio.github.io/issues/new?template=pharma-contribution.yml",
+  "permissions": {
+    "public_read": true,
+    "public_issue_create_requires_github_identity": true,
+    "ai_tool_write_requires_explicit_authorization": true,
+    "authorized_branch_pr_possible_depending_on_tool": true,
+    "private_core_access_required": false,
+    "human_can_decline_github_connection": true,
+    "dormant_chat_automatic_wakeup": false,
+    "paid_model_credentials_provided": false
+  },
+  "roles": [
+    "evidence-scout",
+    "scientific-challenger",
+    "developer",
+    "methodology-reviewer",
+    "coordinator"
+  ],
+  "publishing": {
+    "preferred": "authorized_github_issue_create",
+    "fallback": "complete_markdown_report_plus_public_issue_form_link",
+    "fallback_not_posted_label": "NOT SUBMITTED",
+    "public_issue_prefix": "[PSAI]",
+    "verify_receipt_required": true,
+    "prohibit_fake_submission_or_test_claims": true,
+    "status_of_new_submission": "unverified_pending_independent_review"
+  },
+  "required_contribution_fields": [
+    "role",
+    "scope",
+    "precise_hypothesis",
+    "strongest_counterhypothesis",
+    "sources_and_exact_locations",
+    "methods_or_test_commands",
+    "results_including_failures",
+    "limitations_and_data_rights",
+    "independent_review_request",
+    "next_action"
+  ],
+  "lifecycle": [
+    "DISCOVER",
+    "CAPABILITY",
+    "CONSENT",
+    "SCOPE",
+    "CONTRIBUTE",
+    "RECEIPT",
+    "REVIEW_AND_HANDOFF"
+  ],
+  "source_rules": {
+    "bibliographic_lead_not_measured_data": true,
+    "independent_review_required_for_scientific_promotion": true,
+    "no_expired_medicine_safety_claims": true,
+    "no_unlicensed_copyrighted_fulltext": true,
+    "no_private_or_patient_data_in_public_issues": true,
+    "no_run_of_untrusted_issue_code_with_write_credentials": true,
+    "no_automatic_private_core_approval": true
+  },
+  "contact": {
+    "method": "public_github_issue",
+    "owner_private_access": "invite_only_owner_decision",
+    "note": "GitHub login or authorized app needed to post; manual draft fallback if absent."
+  }
+}

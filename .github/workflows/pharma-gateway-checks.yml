@@ -1,0 +1,27 @@
+name: Public AI contributor gateway contract
+on:
+  push:
+    paths:
+      - 'pharma-stability-ai/**'
+      - '.github/ISSUE_TEMPLATE/pharma-contribution.yml'
+      - '.github/workflows/pharma-gateway-checks.yml'
+  pull_request:
+    paths:
+      - 'pharma-stability-ai/**'
+      - '.github/ISSUE_TEMPLATE/pharma-contribution.yml'
+      - '.github/workflows/pharma-gateway-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify public manifest, issue form, fallback, privacy and role contract
+        run: python -m unittest discover -s pharma-stability-ai/tests -v
+# This checks files only. It neither invokes AI models nor verifies GitHub Pages is live.
