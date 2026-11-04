@@ -2308,7 +2308,7 @@ const STYLES = {
 };
 
 const DEFAULTS = {
-  style: 'scientific', printer: 'p1s', nozzle: 0.4, layerH: 0.2, infill: 15, customBed: [250, 250, 250],
+  style: 'scientific', printer: 'h2s', nozzle: 0.4, layerH: 0.2, infill: 15, customBed: [250, 250, 250],
   base: 3.2, exag: 1, detail: 0.5, smooth: 1,
   buildings: true, bScale: 1, bDefault: 9, levelH: 3, bMinArea: 0.5, bMinH: 0.6, bEmbed: 0.4, bSimplify: 0.05, bMerge: 'fill', partsMode: true,
   roads: 'raised', roadH: 0.4, roadScale: 1, roadMinW: 0.6, roadDetail: 'standard', rails: true,
@@ -5187,6 +5187,7 @@ const LS_KEY = 'maquette-atlas:v3';
 /* Settings from earlier versions: style parameters start from the Scientific default, but the printer set-up,
    data-source choices, last real site and the Earth view (scope, projection, centre, time) carry over. */
 const HW_KEYS = ['printer', 'nozzle', 'layerH', 'infill', 'customBed'];
+const OLD_DEFAULTS = { ...DEFAULTS, printer: 'p1s' }; // v1/v2 shipped with the P1S as default printer
 const lsGet = () => {
   try {
     const cur = localStorage.getItem(LS_KEY);
@@ -5199,7 +5200,7 @@ const lsGet = () => {
     for (const k of HW_KEYS) {
       const a = P2 ? P2[k] : undefined, b = P1 ? P1[k] : undefined;
       // a value changed in the newer version wins, otherwise the older choice stands
-      const v = a !== undefined && JSON.stringify(a) !== JSON.stringify(DEFAULTS[k]) ? a : b !== undefined ? b : a;
+      const v = a !== undefined && JSON.stringify(a) !== JSON.stringify(OLD_DEFAULTS[k]) ? a : b !== undefined ? b : a;
       if (v !== undefined) P[k] = v;
     }
     const e1 = (v1 && v1.earth) || {}, e2 = (v2 && v2.scope === 'earth' && v2.earth) || {};
@@ -5955,7 +5956,9 @@ async function fetchAll() {
   const data = emptyData();
   setSource('sample', null);
   const jobs = [];
-  jobs.push(fetchDEM(bbox, site).then((d) => { data.dem = d; }));
+  // show the terrain as soon as it lands; roads and buildings follow in the final rebuild (Overpass can take minutes)
+  const showSoFar = () => { S.data = data; S.dataVersion++; S.fetchedBBox = bbox; S.elevCache = null; renderSite(); schedule(0); };
+  jobs.push(fetchDEM(bbox, site).then((d) => { data.dem = d; showSoFar(); }));
   if (S.src.osm) {
     const light = area > 40;
     jobs.push(fetchOSM(bbox, light).then((js) => {
@@ -5981,16 +5984,11 @@ async function fetchAll() {
       .catch((e) => setSource('bathymetry', 'err', 'Bathymetry failed: ' + e.message)));
   }
   await Promise.all(jobs);
-  S.data = data;
-  S.dataVersion++;
-  S.fetchedBBox = bbox;
-  S.elevCache = null;
   $('#btnFetch').disabled = false;
   $('#btnFetch').classList.add('primary');
   drawMapData();
-  renderSite();
   busy(false);
-  schedule(0);
+  showSoFar();
 }
 
 /* ---------------- offline help ---------------- */
