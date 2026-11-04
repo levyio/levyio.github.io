@@ -386,7 +386,7 @@ table.bom td.n { text-align: right; font-family: var(--f-mono); font-variant-num
             <span class="lbl">Project model</span>
             <div class="row2"><button class="btn" id="btnModel" type="button">Insert STL / OBJ / GLB</button><button class="btn" id="btnModelClear" type="button">Remove</button></div>
             <input type="file" id="fileModel" accept=".stl,.obj,.glb,.gltf" hidden>
-            <p class="note" id="modelNote">Your design, placed on the site and exported as its own part. Context buildings under it are removed.</p>
+            <p class="note" id="modelNote">Your design, placed on the site: joined to the terrain in one-colour prints, its own part with Separate parts per material. Context buildings under it are removed.</p>
           </div>
           <div id="fx-project"></div>
         </div>
@@ -2982,7 +2982,8 @@ function finish(res, ctx) {
     const byTile = new Map();
     const keep = [];
     for (const p of parts) {
-      if (p.key === 'keys' || p.key === 'plate' || p.key === 'litho' || p.key === 'project' || p.key === 'piece' || p.key === 'sea' || (P.separateBuildings && p.key === 'buildings')) { keep.push(p); continue; }
+      // a project model joins its tile in one-colour prints (it sits on the terrain), like the context buildings
+      if (p.key === 'keys' || p.key === 'plate' || p.key === 'litho' || p.key === 'piece' || p.key === 'sea' || (P.separateBuildings && p.key === 'buildings')) { keep.push(p); continue; }
       if (!byTile.has(p.tile)) byTile.set(p.tile, []);
       byTile.get(p.tile).push(p);
     }
