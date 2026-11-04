@@ -2048,12 +2048,23 @@ function fixCheckerboard(mask, nx, ny) {
   return mask;
 }
 /* Same for flat cell tops: raise one low cell of a diagonal saddle. */
-function fixCheckerboardHeights(top, nx, ny, present) {
-  for (let pass = 0; pass < 4; pass++) {
+/* partial: also level the L-corner case (one cell of the 2×2 absent): two diagonal cells above the cell between them
+   touch only at a corner; absent cells count as lowest. */
+function fixCheckerboardHeights(top, nx, ny, present, partial = false) {
+  for (let pass = 0; pass < (partial ? 8 : 4); pass++) {
     let changed = false;
     for (let j = 0; j + 1 < ny; j++) for (let i = 0; i + 1 < nx; i++) {
       const ia = j * nx + i, ib = ia + 1, ic = ia + nx, id = ic + 1;
-      if (present && !(present[ia] && present[ib] && present[ic] && present[id])) continue;
+      if (present && !(present[ia] && present[ib] && present[ic] && present[id])) {
+        if (!partial) continue;
+        const H = (q) => (present[q] ? top[q] : -Infinity);
+        for (const [p, q, r, s2] of [[ia, id, ib, ic], [ib, ic, ia, id]]) {
+          if (!present[p] || !present[q] || (!present[r] && !present[s2])) continue;
+          const lo = Math.min(top[p], top[q]);
+          if (lo > Math.max(H(r), H(s2)) + 1e-6) { const t = present[r] && (!present[s2] || top[r] >= top[s2]) ? r : s2; top[t] = lo; changed = true; }
+        }
+        continue;
+      }
       const a = top[ia], b = top[ib], c = top[ic], d = top[id];
       if (Math.min(a, d) > Math.max(b, c) + 1e-6) { top[ib] = Math.min(a, d); changed = true; }
       else if (Math.min(b, c) > Math.max(a, d) + 1e-6) { top[ia] = Math.min(b, c); changed = true; }
@@ -2310,7 +2321,7 @@ const STYLES = {
 const DEFAULTS = {
   style: 'scientific', printer: 'h2s', nozzle: 0.4, layerH: 0.2, infill: 15, customBed: [250, 250, 250],
   base: 3.2, exag: 1, detail: 0.5, smooth: 1,
-  buildings: true, bScale: 1, bDefault: 9, levelH: 3, bMinArea: 0.5, bMinH: 0.6, bEmbed: 0.4, bSimplify: 0.05, bMerge: 'fill', partsMode: true,
+  buildings: true, roofs: 'lidar', bScale: 1, bDefault: 9, levelH: 3, bMinArea: 0.5, bMinH: 0.6, bEmbed: 0.4, bSimplify: 0.05, bMerge: 'fill', partsMode: true,
   roads: 'raised', roadH: 0.4, roadScale: 1, roadMinW: 0.6, roadDetail: 'standard', rails: true,
   water: 'carved', waterDepth: 0.8, waterInlay: false, seaFromDem: true, seaLevel: 0,
   green: 'off', greenH: 0.3, trees: false, treeSpacing: 12, treeH: 12, treeD: 7,
@@ -3098,7 +3109,7 @@ function smoothModel(ctx) {
       let hmm = b.h * sc * P.bScale;
       if (low) hmm = Math.max(4, Math.round(b.h / 4) * 4) * sc * P.bScale;
       const top = Math.max(gmean + hmm, gmin + P.bMinH);
-      bl.push({ outer, holes, bb: ringBBox(outer), gmin, gmean, top, id: bl.length });
+      bl.push({ outer, holes, bb: ringBBox(outer), gmin, gmean, top, h: b.h, id: bl.length });
     }
     for (const b of bl) rasterPoly(bmask, nx, ny, cx, cy, b.outer, b.holes, b.id);
     if (P.separateBuildings) {
@@ -3110,6 +3121,62 @@ function smoothModel(ctx) {
         if (id >= 0) zvC[k] = Math.min(zvC[k], bl[id].gmean);
       }
     }
+  }
+  // measured roofs: inside each footprint the top follows the surface model (height above ground, metres), as columns
+  let roofTop = null, roofBot = null, roofPresent = null;
+  if (bl.length && ctx.extras.roofAG && P.roofs === 'lidar' && !low) {
+    roofTop = new Float32Array(N); roofBot = new Float32Array(N);
+    // height above ground per cell; per building, values far from its median are trees over the roof or edge misregistration
+    const hag = new Float32Array(N).fill(NaN), byB = bl.map(() => []);
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const k = j * nx + i, id = bmask[k];
+      if (id < 0) continue;
+      const ll = site.modelToLonLat((i + 0.5) * cx, (j + 0.5) * cy), v = ctx.extras.roofAG(ll[0], ll[1]);
+      if (v === v) { hag[k] = v; byB[id].push(v); }
+    }
+    const med = byB.map((a, id) => { if (a.length < 4) return bl[id].h; a.sort((x, y) => x - y); return a[a.length >> 1]; });
+    for (let k = 0; k < N; k++) { const id = bmask[k]; if (id >= 0 && !(Math.abs(hag[k] - med[id]) <= 1.5)) hag[k] = med[id]; }
+    // light smoothing (~0.75 m) inside each footprint removes the 0.5 m LiDAR stepping
+    const r = Math.max(1, Math.round((0.75 * sc) / Math.max(cx, cy)));
+    const blur = (src, horiz) => {
+      const out = new Float32Array(N);
+      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+        const k = j * nx + i, id = bmask[k];
+        if (id < 0) continue;
+        let sum = 0, n = 0;
+        for (let d = -r; d <= r; d++) {
+          const ii = horiz ? i + d : i, jj = horiz ? j : j + d;
+          if (ii < 0 || jj < 0 || ii >= nx || jj >= ny) continue;
+          const q = jj * nx + ii;
+          if (bmask[q] === id) { sum += src[q]; n++; }
+        }
+        out[k] = sum / n;
+      }
+      return out;
+    };
+    const hs = blur(blur(hag, true), false);
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const k = j * nx + i, id = bmask[k];
+      if (id < 0) continue;
+      const b = bl[id], x = (i + 0.5) * cx, y = (j + 0.5) * cy;
+      roofBot[k] = P.separateBuildings ? b.gmean : b.gmin - P.bEmbed;
+      roofTop[k] = Math.max(zAt(x, y) + Math.max(0, hs[k]) * sc * P.bScale, b.gmin + P.bMinH, roofBot[k] + P.bMinH);
+    }
+    // corner-only contacts and diagonal saddles give non-manifold edges: fill the gap cell, level the saddle
+    roofPresent = new Uint8Array(N);
+    for (let k = 0; k < N; k++) roofPresent[k] = bmask[k] >= 0 ? 1 : 0;
+    const before = roofPresent.slice();
+    fixCheckerboard(roofPresent, nx, ny);
+    for (let k = 0; k < N; k++) if (roofPresent[k] && !before[k]) {
+      const i = k % nx, j = (k - i) / nx;
+      let t = -Infinity, bo = Infinity;
+      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= nx || jj >= ny || !before[jj * nx + ii]) continue; const q = jj * nx + ii; t = Math.max(t, roofTop[q]); bo = Math.min(bo, roofBot[q]); }
+      roofTop[k] = t; roofBot[k] = bo;
+    }
+    fixCheckerboardHeights(roofTop, nx, ny, roofPresent, true);
+    for (let k = 0; k < N; k++) roofBot[k] = -roofBot[k];
+    fixCheckerboardHeights(roofBot, nx, ny, roofPresent, true);
+    for (let k = 0; k < N; k++) roofBot[k] = -roofBot[k];
   }
   // green & forest masks
   const green = new Uint8Array(N), forest = new Uint8Array(N);
@@ -3193,7 +3260,27 @@ function smoothModel(ctx) {
     // buildings
     if (bl.length) {
       const mbB = new MeshBuffer(1 << 14);
-      for (const bi of bidx.query(rect)) {
+      if (roofTop) {
+        const present = new Uint8Array(kx * ky), botC = new Float32Array(kx * ky), topRV = new Float32Array((kx + 1) * (ky + 1));
+        for (let j = 0; j < ky; j++) for (let i = 0; i < kx; i++) {
+          const k = (j0 + j) * nx + i0 + i, q = j * kx + i;
+          if (!roofPresent[k]) continue;
+          present[q] = 1; botC[q] = roofBot[k];
+        }
+        // sloped roof surface: each corner takes the mean of the cells around it (whole grid, so tile seams match)
+        for (let j = 0; j <= ky; j++) for (let i = 0; i <= kx; i++) {
+          let sum = 0, n = 0, bmax = -Infinity;
+          for (const [di, dj] of [[-1, -1], [0, -1], [-1, 0], [0, 0]]) {
+            const gi = i0 + i + di, gj = j0 + j + dj;
+            if (gi < 0 || gj < 0 || gi >= nx || gj >= ny) continue;
+            const k = gj * nx + gi;
+            if (!roofPresent[k]) continue;
+            sum += roofTop[k]; n++; if (roofBot[k] > bmax) bmax = roofBot[k];
+          }
+          if (n) topRV[j * (kx + 1) + i] = Math.max(sum / n, bmax + P.bMinH);
+        }
+        buildColumns({ nx: kx, ny: ky, x0: rect[0], y0: rect[1], cx, cy, bottom: botC, topV: topRV, present }, mbB);
+      } else for (const bi of bidx.query(rect)) {
         const b = bl[bi];
         const zb = P.separateBuildings ? b.gmean : b.gmin - P.bEmbed;
         for (const piece of clipPolygonRect(b.outer, b.holes, rect[0], rect[1], rect[2], rect[3])) {
@@ -5271,6 +5358,7 @@ const FIELDS = [
   { id: 'lithoInvert', sec: 'model', label: 'Relief plaque (bright = thick)', type: 'toggle', show: () => MODE() === 'litho' },
 
   { id: 'buildings', sec: 'layers', label: 'Buildings', type: 'toggle', show: notLitho, group: 'Buildings' },
+  { id: 'roofs', sec: 'layers', label: 'Roofs', type: 'seg', opts: [['lidar', 'Measured · LiDAR'], ['flat', 'Flat']], show: () => notLitho() && S.P.buildings, scope: 'site' },
   { id: 'bScale', sec: 'layers', label: 'Height ×', type: 'range', min: 0.2, max: 4, step: 0.1, unit: '×', show: () => notLitho() && S.P.buildings },
   { id: 'bDefault', sec: 'layers', label: 'Height when untagged', type: 'range', min: 3, max: 40, step: 1, unit: 'm', show: () => notLitho() && S.P.buildings },
   { id: 'levelH', sec: 'layers', label: 'Storey height', type: 'range', min: 2.4, max: 5, step: 0.1, unit: 'm', show: () => notLitho() && S.P.buildings },
@@ -5978,6 +6066,14 @@ async function fetchAll() {
       .catch((e) => setSource('overture', 'err', 'Overture failed: ' + e.message)));
   }
   if (S.src.drape === 'satellite' || S.src.drape === 'osm') jobs.push(fetchImagery(site).catch(() => setSource('imagery', 'err', 'Imagery failed')));
+  // measured roofs: LiDAR HD surface minus terrain, only where roof shapes show (France, 1:2500 or closer, under 1 km²)
+  if (S.P.buildings && S.P.roofs === 'lidar' && inFrance(bbox) && scaleDen() <= 2500 && area <= 1) {
+    setSource('roofs', 'busy', 'IGN LiDAR HD roofs');
+    const res = Math.max(0.5, scaleDen() / 2000);
+    jobs.push(Promise.all([fetchIGNDem(bbox, res, 'IGNF_LIDAR-HD_MNS_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93'), fetchIGNDem(bbox, res, 'IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93')])
+      .then(([sf, gr]) => { data.roofAG = (lon, lat) => sf.raster.sample(lon, lat) - gr.raster.sample(lon, lat); setSource('roofs', 'ok', `IGN LiDAR HD roofs · ${sf.resM.toFixed(1)} m/px`, '© IGN Géoplateforme'); })
+      .catch((e) => setSource('roofs', 'err', 'LiDAR roofs failed: ' + e.message)));
+  }
   if (S.P.water === 'seabed') {
     setSource('bathymetry', 'busy', 'Bathymetry · AWS Terrain Tiles');
     jobs.push(fetchTerrarium(bbox, Math.max(5, site.widthM / 400), 'aws').then((r) => { data.bathy = { sample: r.raster.sample, label: 'AWS Terrain Tiles' }; setSource('bathymetry', 'ok', `Bathymetry · AWS Terrain Tiles · ${r.resM.toFixed(0)} m/px`, 'Terrain Tiles: Mapzen/Tilezen, ETOPO1, GEBCO, NOAA'); })
@@ -6359,7 +6455,7 @@ async function regenerate() {
       S.elevCache = { key: key + '|' + P.water + (bathy ? '|b' : ''), E };
     }
     if (P.style === 'lithophane' && P.lithoSrc === 'imagery') siteTexture();
-    const extras = { photo: S.photo, imagery: S.imagery && S.imagery.gray ? S.imagery : null, project: pj, provenance: P.provenance ? siteProvenance() : null };
+    const extras = { roofAG: P.roofs === 'lidar' && S.data && S.data.roofAG ? S.data.roofAG : null, photo: S.photo, imagery: S.imagery && S.imagery.gray ? S.imagery : null, project: pj, provenance: P.provenance ? siteProvenance() : null };
     const res = generateModel(site, F, E, P, extras);
     if (seq !== genSeq) return;
     S.result = res;
