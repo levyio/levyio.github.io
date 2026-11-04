@@ -5799,7 +5799,7 @@ async function fetchTerrarium(bbox, target, src) {
   }
   throw new Error('terrain tiles unavailable for this area');
 }
-async function fetchIGNDem(bbox, target, layer) {
+async function fetchIGNDem(bbox, target, layer, minValid = 0.2) {
   const lat = (bbox[1] + bbox[3]) / 2, m = metersPerDegree(lat);
   const wM = (bbox[2] - bbox[0]) * m.mLon, hM = (bbox[3] - bbox[1]) * m.mLat;
   let w = Math.round(wM / target), hh = Math.round(hM / target);
@@ -5816,7 +5816,7 @@ async function fetchIGNDem(bbox, target, layer) {
       const win = await t.readWindow(0, 0, t.width, t.height);
       let valid = 0;
       for (let k = 0; k < win.data.length; k++) if (win.data[k] === win.data[k]) valid++;
-      if (valid < win.data.length * 0.2) throw new Error('no IGN coverage at this site');
+      if (valid < win.data.length * minValid) throw new Error('no IGN coverage at this site');
       const toPixel = (lon, la) => [((lon - bbox[0]) / (bbox[2] - bbox[0])) * win.w - 0.5, ((bbox[3] - la) / (bbox[3] - bbox[1])) * win.h - 0.5];
       return { raster: makeRaster(win.w, win.h, win.data, toPixel), resM: wM / win.w };
     } catch (e) { lastErr = e; }
@@ -5851,13 +5851,16 @@ async function fetchDEM(bbox, site) {
     }
     if (s.startsWith('ign')) {
       const layer = s === 'ign' ? 'ELEVATION.ELEVATIONGRIDCOVERAGE.HIGHRES' : s === 'ign-mnt' ? 'IGNF_LIDAR-HD_MNT_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93' : 'IGNF_LIDAR-HD_MNS_ELEVATION.ELEVATIONGRIDCOVERAGE.LAMB93';
-      const r = await fetchIGNDem(bbox, Math.max(s === 'ign' ? 1 : 0.5, target), layer);
+      // Auto takes LiDAR HD terrain only where it covers the whole site (it is still being flown in places)
+      const r = await fetchIGNDem(bbox, Math.max(s === 'ign' ? 1 : 0.5, target), layer, src === 'auto' && s === 'ign-mnt' ? 0.98 : 0.2);
       return { ...r, label: s === 'ign' ? 'IGN RGE ALTI' : s === 'ign-mnt' ? 'IGN LiDAR HD terrain' : 'IGN LiDAR HD surface', attrib: '© IGN Géoplateforme' };
     }
     const r = await fetchOpenMeteo(bbox);
     return { ...r, label: 'Copernicus GLO-90 (Open-Meteo)', attrib: 'Copernicus DEM via Open-Meteo' };
   };
-  const order = src === 'auto' ? (inFrance(bbox) ? ['ign', 'mapterhorn', 'aws', 'openmeteo'] : ['mapterhorn', 'aws', 'openmeteo']) : [src, ...(src.startsWith('ign') || src === 'openmeteo' ? ['mapterhorn', 'aws'] : ['aws'])];
+  // in France, sites with cells of 2 m or less get IGN LiDAR HD terrain (0.5 m): RGE ALTI is interpolated from 5 m in places, which shows as creases
+  const fr = inFrance(bbox) ? (target <= 2 ? ['ign-mnt', 'ign'] : ['ign']) : [];
+  const order = src === 'auto' ? [...fr, 'mapterhorn', 'aws', 'openmeteo'] : [src, ...(src.startsWith('ign') || src === 'openmeteo' ? ['mapterhorn', 'aws'] : ['aws'])];
   let lastErr;
   for (const s of order) {
     setSource('elevation', 'busy', `Elevation · ${s}`);
