@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Models · Maquette Atlas</title>
+<meta name="description" content="Curated starting points. Each opens in the Studio, where you can change the place, the frame and the finish.">
+<link rel="alternate" hreflang="en" href="/maquette-atlas/models/">
+<link rel="alternate" hreflang="fr" href="/maquette-atlas/fr/models/">
+<link rel="icon" href="/maquette-atlas/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Website pages. Same tokens as the Studio (src/app/style.css), quieter: typography first, large model imagery. */
+:root {
+  --bg: #f3f2ee; --surface: #fbfaf7; --ink: #191f1d; --ink-2: #4a5451; --ink-3: #7a8481; --line: #dcdcd5; --accent: #c93b26; --accent-ink: #fff; --stage: #e4e5df;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif; --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; --r: 6px; --gut: 16px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #121614; --surface: #181d1b; --ink: #e6ebe8; --ink-2: #aab4b0; --ink-3: #7c8784; --line: #2a3230; --accent: #ff6a4d; --accent-ink: #1a0c08; --stage: #0e1211; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #121614; --surface: #181d1b; --ink: #e6ebe8; --ink-2: #aab4b0; --ink-3: #7c8784; --line: #2a3230; --accent: #ff6a4d; --accent-ink: #1a0c08; --stage: #0e1211; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--f-display); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 12px; z-index: 10; }
+.skip:focus { left: 8px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 max(var(--gut), env(safe-area-inset-left, 0px)); }
+.narrow { max-width: 760px; }
+.mono { font-family: var(--f-mono); font-size: 12.5px; color: var(--ink-3); }
+
+/* header */
+.top { border-bottom: 1px solid var(--line); background: var(--bg); position: sticky; top: 0; z-index: 5; }
+.top-in { display: flex; align-items: center; gap: 20px; min-height: 60px; }
+.logo { display: inline-flex; align-items: center; gap: 9px; font-weight: 700; font-stretch: 118%; font-size: 18px; text-decoration: none; white-space: nowrap; }
+.mark { width: 18px; height: 12px; border: 2px solid var(--accent); border-radius: 1px; }
+.nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; }
+.nav a, .lang, .foot a { text-decoration: none; color: var(--ink-2); }
+.nav a:hover, .nav a[aria-current="page"], .lang:hover, .foot a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 6px; text-decoration-thickness: 2px; }
+.lang { font: 600 12.5px/1 var(--f-mono); border: 1px solid var(--line); border-radius: 99px; padding: 6px 10px; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: var(--r); border: 1px solid var(--ink); background: transparent; color: var(--ink); font: 600 15px/1 var(--f-display); text-decoration: none; cursor: pointer; }
+.btn:hover { background: var(--ink); color: var(--bg); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); background: var(--accent); color: var(--accent-ink); }
+.btn.small { min-height: 34px; padding: 0 12px; font-size: 13.5px; }
+
+/* hero */
+.hero { padding: 56px 0 72px; }
+.hero-in { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; }
+.kicker { font: 500 13px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin: 0 0 18px; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.05; margin: 0; letter-spacing: -0.015em; }
+.hero h1 { font-size: clamp(42px, 6.4vw, 84px); font-weight: 700; font-stretch: 112%; letter-spacing: -0.03em; }
+.lead { font-size: clamp(17px, 1.6vw, 20px); color: var(--ink-2); max-width: 36em; margin: 22px 0 0; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin: 32px 0 0; }
+.hero-model { margin: 0; }
+.stage { position: relative; aspect-ratio: 4 / 3; background: var(--stage); border-radius: 10px; overflow: hidden; }
+.stage img, .stage canvas { width: 100%; height: 100%; object-fit: cover; display: block; touch-action: pan-y; }
+.hero-model figcaption { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+
+/* sections */
+section > .wrap > h2, .row-head h2 { font-size: clamp(26px, 3vw, 36px); font-weight: 650; font-stretch: 108%; }
+.how { padding: 64px 0; border-top: 1px solid var(--line); }
+.steps { list-style: none; padding: 0; margin: 32px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
+.steps .num { font: 500 13px/1 var(--f-mono); color: var(--accent); }
+.steps h3 { font-size: 22px; margin: 10px 0 8px; font-weight: 650; }
+.steps p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+.featured { padding: 64px 0 88px; border-top: 1px solid var(--line); }
+.row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.row-head a { color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 28px; }
+.card { display: flex; flex-direction: column; }
+.card-img { display: block; aspect-ratio: 4 / 3; background: var(--stage); border-radius: 8px; overflow: hidden; }
+.card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+.card:hover .card-img img { transform: scale(1.03); }
+.card .ph { display: block; width: 100%; height: 100%; }
+.card-body { padding-top: 14px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.card h3 { font-size: 20px; font-weight: 650; }
+.card p { margin: 0 0 8px; color: var(--ink-2); font-size: 15px; }
+.page-head { padding: 56px 0 24px; }
+.page-head h1 { font-size: clamp(38px, 5vw, 64px); font-weight: 700; font-stretch: 112%; letter-spacing: -0.025em; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.chips a { text-decoration: none; border: 1px solid var(--line); border-radius: 99px; padding: 7px 13px; font-size: 14px; color: var(--ink-2); }
+.chips a:hover { border-color: var(--ink); color: var(--ink); }
+.group { padding: 32px 0 24px; scroll-margin-top: 70px; }
+.group + .group { border-top: 1px solid var(--line); }
+.note { color: var(--ink-3); }
+.saved { padding: 16px 0; }
+.saved-list { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 8px; }
+.saved-list li { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); flex-wrap: wrap; }
+.saved-list a { font-weight: 600; flex: 1; min-width: 12em; }
+.prose { padding: 8px 0 72px; }
+.prose h2 { font-size: 28px; margin: 40px 0 12px; }
+.prose h3 { font-size: 19px; margin: 28px 0 6px; }
+.prose p { color: var(--ink-2); margin: 0 0 14px; }
+.sources { margin: 20px 0 0; display: grid; gap: 0; }
+.sources > div { padding: 12px 0; border-top: 1px solid var(--line); }
+.sources dt { font-weight: 600; }
+.sources dd { margin: 2px 0 0; color: var(--ink-2); font-size: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 760px; padding-bottom: 72px; }
+.plan { border: 1px solid var(--line); border-radius: 10px; padding: 24px; background: var(--surface); }
+.plan.on { border-color: var(--ink); }
+.plan h2 { font-size: 22px; }
+.price { font-size: 40px; font-weight: 700; margin: 12px 0 4px; font-stretch: 110%; }
+.plan p { color: var(--ink-2); }
+
+/* footer */
+.foot { border-top: 1px solid var(--line); padding: 28px 0 max(28px, env(safe-area-inset-bottom, 0px)); font-size: 14px; color: var(--ink-3); }
+.foot-in { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.foot p { margin: 0; }
+.foot nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.tag { font: 600 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; border: 1px solid var(--line); border-radius: 99px; padding: 3px 7px; margin-left: 6px; }
+
+/* phone first adjustments */
+@media (max-width: 900px) {
+  .hero { padding: 28px 0 48px; }
+  .hero-in { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+}
+@media (max-width: 620px) {
+  .top-in { flex-wrap: wrap; gap: 4px 14px; padding-block: 10px; }
+  .nav { order: 3; width: 100%; margin: 0; gap: 18px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; font-size: 14.5px; }
+  .lang { margin-left: auto; }
+  .steps, .grid, .plans { grid-template-columns: minmax(0, 1fr); }
+  .how, .featured { padding: 44px 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+</style>
+<script type="module">
+let list = [];
+try { list = JSON.parse(localStorage.getItem('maquette-atlas:models') || '[]'); } catch (e) { list = []; }
+const box = document.getElementById('savedList'), sec = document.getElementById('saved');
+const render = () => {
+  box.textContent = '';
+  sec.hidden = !list.length;
+  for (const it of list) {
+    const li = document.createElement('li');
+    const a = document.createElement('a'); a.href = "/maquette-atlas/studio/" + '?' + it.q; a.textContent = it.name;
+    const d = document.createElement('span'); d.className = 'mono'; d.textContent = new Date(it.at).toLocaleDateString("en");
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'btn small'; x.textContent = "Remove";
+    x.addEventListener('click', () => { list = list.filter((o) => o !== it); try { localStorage.setItem('maquette-atlas:models', JSON.stringify(list)); } catch (e) {} render(); });
+    li.append(a, d, x); box.append(li);
+  }
+};
+render();
+</script>
+</head>
+<body class="">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="wrap top-in">
+  <a class="logo" href="/maquette-atlas/"><span class="mark" aria-hidden="true"></span>Maquette Atlas</a>
+  <nav class="nav" aria-label="Main"><a href="/maquette-atlas/models/" aria-current="page">Models</a><a href="/maquette-atlas/studio/">Studio</a><a href="/maquette-atlas/guides/">Guides</a><a href="/maquette-atlas/about/">About</a><a href="/maquette-atlas/pricing/">Pricing</a></nav>
+  <a class="lang" href="/maquette-atlas/fr/models/" hreflang="fr" lang="fr" aria-label="Language: Français">FR</a>
+</div></header>
+<main id="main">
+
+<section class="page-head"><div class="wrap"><h1>Models</h1><p class="lead">Curated starting points. Each opens in the Studio, where you can change the place, the frame and the finish.</p>
+<nav class="chips" aria-label="Models"><a href="#g-cities">Cities</a><a href="#g-mountains">Mountains</a><a href="#g-islands">Islands</a><a href="#g-canyons">Canyons</a><a href="#g-earth">Earth projections</a><a href="#g-plates">Plates through time</a><a href="#g-planets">Planets</a></nav></div></section>
+<section class="saved" id="saved" hidden><div class="wrap"><h2>Saved in this browser</h2><ul class="saved-list" id="savedList"></ul></div></section>
+<section class="group" id="g-cities"><div class="wrap"><h2>Cities</h2><div class="grid"><article class="card" data-preset="paris-cite">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=48.8545&amp;lon=2.3470&amp;label=Paris%20%C2%B7%20%C3%8Ele%20de%20la%20Cit%C3%A9&amp;w=1500&amp;h=1000&amp;scale=5000&amp;style=urban&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/paris-cite.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Paris · Île de la Cité</h3><p>The island, its bridges and the Seine at 1:5000.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=48.8545&amp;lon=2.3470&amp;label=Paris%20%C2%B7%20%C3%8Ele%20de%20la%20Cit%C3%A9&amp;w=1500&amp;h=1000&amp;scale=5000&amp;style=urban&amp;printer=h2d">Customize<span class="vh"> · Paris · Île de la Cité</span></a></div>
+</article><article class="card" data-preset="manhattan">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=40.7580&amp;lon=-73.9800&amp;label=Midtown%20Manhattan&amp;w=1500&amp;h=1100&amp;rot=29&amp;scale=5000&amp;style=architectural&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/manhattan.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Midtown Manhattan</h3><p>Towers between Central Park and the Empire State.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=40.7580&amp;lon=-73.9800&amp;label=Midtown%20Manhattan&amp;w=1500&amp;h=1100&amp;rot=29&amp;scale=5000&amp;style=architectural&amp;printer=h2d">Customize<span class="vh"> · Midtown Manhattan</span></a></div>
+</article><article class="card" data-preset="venice">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=45.4375&amp;lon=12.3358&amp;label=Venice&amp;w=3000&amp;h=2000&amp;scale=10000&amp;style=urban&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/venice.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Venice</h3><p>The lagoon city, canals carved in.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=45.4375&amp;lon=12.3358&amp;label=Venice&amp;w=3000&amp;h=2000&amp;scale=10000&amp;style=urban&amp;printer=h2d">Customize<span class="vh"> · Venice</span></a></div>
+</article></div></div></section>
+<section class="group" id="g-mountains"><div class="wrap"><h2>Mountains</h2><div class="grid"><article class="card" data-preset="matterhorn">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=45.9763&amp;lon=7.6586&amp;label=Matterhorn&amp;w=6000&amp;h=6000&amp;scale=25000&amp;style=scientific&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/matterhorn.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Matterhorn</h3><p>The pyramid peak at true scale, no exaggeration.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=45.9763&amp;lon=7.6586&amp;label=Matterhorn&amp;w=6000&amp;h=6000&amp;scale=25000&amp;style=scientific&amp;printer=h2d">Customize<span class="vh"> · Matterhorn</span></a></div>
+</article><article class="card" data-preset="mont-blanc">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=45.8650&amp;lon=6.8900&amp;label=Mont%20Blanc&amp;w=12000&amp;h=9000&amp;scale=50000&amp;style=nature&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/mont-blanc.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Mont Blanc massif</h3><p>Glaciers and needles above Chamonix.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=45.8650&amp;lon=6.8900&amp;label=Mont%20Blanc&amp;w=12000&amp;h=9000&amp;scale=50000&amp;style=nature&amp;printer=h2d">Customize<span class="vh"> · Mont Blanc massif</span></a></div>
+</article></div></div></section>
+<section class="group" id="g-islands"><div class="wrap"><h2>Islands</h2><div class="grid"><article class="card" data-preset="mont-saint-michel">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=48.6360&amp;lon=-1.5115&amp;label=Mont-Saint-Michel&amp;w=1200&amp;h=900&amp;scale=5000&amp;style=urban&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/mont-saint-michel.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Mont-Saint-Michel</h3><p>The tidal island and its abbey.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=48.6360&amp;lon=-1.5115&amp;label=Mont-Saint-Michel&amp;w=1200&amp;h=900&amp;scale=5000&amp;style=urban&amp;printer=h2d">Customize<span class="vh"> · Mont-Saint-Michel</span></a></div>
+</article><article class="card" data-preset="stromboli">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=38.7940&amp;lon=15.2130&amp;label=Stromboli&amp;w=5000&amp;h=5000&amp;scale=20000&amp;style=nature&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/stromboli.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Stromboli</h3><p>A volcano island rising out of the sea.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=38.7940&amp;lon=15.2130&amp;label=Stromboli&amp;w=5000&amp;h=5000&amp;scale=20000&amp;style=nature&amp;printer=h2d">Customize<span class="vh"> · Stromboli</span></a></div>
+</article></div></div></section>
+<section class="group" id="g-canyons"><div class="wrap"><h2>Canyons</h2><div class="grid"><article class="card" data-preset="grand-canyon">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=36.0980&amp;lon=-112.1100&amp;label=Grand%20Canyon&amp;w=16000&amp;h=12000&amp;scale=60000&amp;style=nature&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/grand-canyon.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Grand Canyon</h3><p>Bright Angel and the Colorado River gorge.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=36.0980&amp;lon=-112.1100&amp;label=Grand%20Canyon&amp;w=16000&amp;h=12000&amp;scale=60000&amp;style=nature&amp;printer=h2d">Customize<span class="vh"> · Grand Canyon</span></a></div>
+</article><article class="card" data-preset="verdon">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=site&amp;lat=43.7600&amp;lon=6.3500&amp;label=Gorges%20du%20Verdon&amp;w=9000&amp;h=6000&amp;scale=40000&amp;style=nature&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/verdon.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Gorges du Verdon</h3><p>Europe’s deepest gorge, in Provence.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=site&amp;lat=43.7600&amp;lon=6.3500&amp;label=Gorges%20du%20Verdon&amp;w=9000&amp;h=6000&amp;scale=40000&amp;style=nature&amp;printer=h2d">Customize<span class="vh"> · Gorges du Verdon</span></a></div>
+</article></div></div></section>
+<section class="group" id="g-earth"><div class="wrap"><h2>Earth projections</h2><div class="grid"><article class="card" data-preset="world-equal-earth">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=earth&amp;view=world-ee&amp;elon=10&amp;elat=30&amp;style=scientific&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/world-equal-earth.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>The world · Equal Earth</h3><p>Land and sea floor, true areas.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=earth&amp;view=world-ee&amp;elon=10&amp;elat=30&amp;style=scientific&amp;printer=h2d">Customize<span class="vh"> · The world · Equal Earth</span></a></div>
+</article><article class="card" data-preset="arctic">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=earth&amp;view=polar-n&amp;elon=0&amp;elat=90&amp;style=scientific&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/arctic.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>The Arctic</h3><p>The polar ocean seen from above the pole.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=earth&amp;view=polar-n&amp;elon=0&amp;elat=90&amp;style=scientific&amp;printer=h2d">Customize<span class="vh"> · The Arctic</span></a></div>
+</article></div></div></section>
+<section class="group" id="g-plates"><div class="wrap"><h2>Plates through time</h2><div class="grid"><article class="card" data-preset="pangaea">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=earth&amp;view=world-ee&amp;elon=10&amp;elat=30&amp;t=200&amp;style=scientific&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/pangaea.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Pangaea · 200 million years ago</h3><p>One supercontinent, just as it begins to split.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=earth&amp;view=world-ee&amp;elon=10&amp;elat=30&amp;t=200&amp;style=scientific&amp;printer=h2d">Customize<span class="vh"> · Pangaea · 200 million years ago</span></a></div>
+</article><article class="card" data-preset="cretaceous">
+  <a class="card-img" href="/maquette-atlas/studio/?scope=earth&amp;view=world-ee&amp;elon=10&amp;elat=30&amp;t=100&amp;style=scientific&amp;printer=h2d" tabindex="-1" aria-hidden="true"><img src="/maquette-atlas/thumbs/cretaceous.webp" alt="" loading="lazy" width="800" height="600"></a>
+  <div class="card-body"><h3>Cretaceous · 100 million years ago</h3><p>The Atlantic opens, India drifts north.</p>
+  <a class="btn" href="/maquette-atlas/studio/?scope=earth&amp;view=world-ee&amp;elon=10&amp;elat=30&amp;t=100&amp;style=scientific&amp;printer=h2d">Customize<span class="vh"> · Cretaceous · 100 million years ago</span></a></div>
+</article></div></div></section>
+<section class="group" id="g-planets"><div class="wrap"><h2>Planets</h2><p class="note">The Moon and Mars are next.</p></div></section>
+</main>
+<footer class="foot"><div class="wrap foot-in">
+  <p>Made from open data. See the Guides for sources and licences. <span class="tag">Preview</span></p>
+  <nav aria-label="Legal"><a href="/maquette-atlas/privacy/">Privacy</a><a href="/maquette-atlas/terms/">Terms</a><a href="/maquette-atlas/cookies/">Cookies</a><a href="/maquette-atlas/legal/">Legal notice</a></nav>
+</div></footer>
+</body>
+</html>

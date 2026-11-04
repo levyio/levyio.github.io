@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tarifs · Maquette Atlas</title>
+<meta name="description" content="Maquette Atlas est gratuit pendant l’aperçu. Des offres et des licences pour l’usage commercial viendront plus tard ; ce site ne prend aucun paiement.">
+<link rel="alternate" hreflang="en" href="/maquette-atlas/pricing/">
+<link rel="alternate" hreflang="fr" href="/maquette-atlas/fr/pricing/">
+<link rel="icon" href="/maquette-atlas/favicon.svg" type="image/svg+xml">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Website pages. Same tokens as the Studio (src/app/style.css), quieter: typography first, large model imagery. */
+:root {
+  --bg: #f3f2ee; --surface: #fbfaf7; --ink: #191f1d; --ink-2: #4a5451; --ink-3: #7a8481; --line: #dcdcd5; --accent: #c93b26; --accent-ink: #fff; --stage: #e4e5df;
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif; --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; --r: 6px; --gut: 16px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #121614; --surface: #181d1b; --ink: #e6ebe8; --ink-2: #aab4b0; --ink-3: #7c8784; --line: #2a3230; --accent: #ff6a4d; --accent-ink: #1a0c08; --stage: #0e1211; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #121614; --surface: #181d1b; --ink: #e6ebe8; --ink-2: #aab4b0; --ink-3: #7c8784; --line: #2a3230; --accent: #ff6a4d; --accent-ink: #1a0c08; --stage: #0e1211; color-scheme: dark; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--f-display); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--ink); color: var(--bg); padding: 8px 12px; z-index: 10; }
+.skip:focus { left: 8px; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 max(var(--gut), env(safe-area-inset-left, 0px)); }
+.narrow { max-width: 760px; }
+.mono { font-family: var(--f-mono); font-size: 12.5px; color: var(--ink-3); }
+
+/* header */
+.top { border-bottom: 1px solid var(--line); background: var(--bg); position: sticky; top: 0; z-index: 5; }
+.top-in { display: flex; align-items: center; gap: 20px; min-height: 60px; }
+.logo { display: inline-flex; align-items: center; gap: 9px; font-weight: 700; font-stretch: 118%; font-size: 18px; text-decoration: none; white-space: nowrap; }
+.mark { width: 18px; height: 12px; border: 2px solid var(--accent); border-radius: 1px; }
+.nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; }
+.nav a, .lang, .foot a { text-decoration: none; color: var(--ink-2); }
+.nav a:hover, .nav a[aria-current="page"], .lang:hover, .foot a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 6px; text-decoration-thickness: 2px; }
+.lang { font: 600 12.5px/1 var(--f-mono); border: 1px solid var(--line); border-radius: 99px; padding: 6px 10px; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: var(--r); border: 1px solid var(--ink); background: transparent; color: var(--ink); font: 600 15px/1 var(--f-display); text-decoration: none; cursor: pointer; }
+.btn:hover { background: var(--ink); color: var(--bg); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); background: var(--accent); color: var(--accent-ink); }
+.btn.small { min-height: 34px; padding: 0 12px; font-size: 13.5px; }
+
+/* hero */
+.hero { padding: 56px 0 72px; }
+.hero-in { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; }
+.kicker { font: 500 13px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin: 0 0 18px; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.05; margin: 0; letter-spacing: -0.015em; }
+.hero h1 { font-size: clamp(42px, 6.4vw, 84px); font-weight: 700; font-stretch: 112%; letter-spacing: -0.03em; }
+.lead { font-size: clamp(17px, 1.6vw, 20px); color: var(--ink-2); max-width: 36em; margin: 22px 0 0; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin: 32px 0 0; }
+.hero-model { margin: 0; }
+.stage { position: relative; aspect-ratio: 4 / 3; background: var(--stage); border-radius: 10px; overflow: hidden; }
+.stage img, .stage canvas { width: 100%; height: 100%; object-fit: cover; display: block; touch-action: pan-y; }
+.hero-model figcaption { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+
+/* sections */
+section > .wrap > h2, .row-head h2 { font-size: clamp(26px, 3vw, 36px); font-weight: 650; font-stretch: 108%; }
+.how { padding: 64px 0; border-top: 1px solid var(--line); }
+.steps { list-style: none; padding: 0; margin: 32px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; }
+.steps .num { font: 500 13px/1 var(--f-mono); color: var(--accent); }
+.steps h3 { font-size: 22px; margin: 10px 0 8px; font-weight: 650; }
+.steps p { margin: 0; color: var(--ink-2); font-size: 15.5px; }
+.featured { padding: 64px 0 88px; border-top: 1px solid var(--line); }
+.row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.row-head a { color: var(--ink-2); text-decoration: none; white-space: nowrap; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 28px; }
+.card { display: flex; flex-direction: column; }
+.card-img { display: block; aspect-ratio: 4 / 3; background: var(--stage); border-radius: 8px; overflow: hidden; }
+.card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+.card:hover .card-img img { transform: scale(1.03); }
+.card .ph { display: block; width: 100%; height: 100%; }
+.card-body { padding-top: 14px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.card h3 { font-size: 20px; font-weight: 650; }
+.card p { margin: 0 0 8px; color: var(--ink-2); font-size: 15px; }
+.page-head { padding: 56px 0 24px; }
+.page-head h1 { font-size: clamp(38px, 5vw, 64px); font-weight: 700; font-stretch: 112%; letter-spacing: -0.025em; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.chips a { text-decoration: none; border: 1px solid var(--line); border-radius: 99px; padding: 7px 13px; font-size: 14px; color: var(--ink-2); }
+.chips a:hover { border-color: var(--ink); color: var(--ink); }
+.group { padding: 32px 0 24px; scroll-margin-top: 70px; }
+.group + .group { border-top: 1px solid var(--line); }
+.note { color: var(--ink-3); }
+.saved { padding: 16px 0; }
+.saved-list { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 8px; }
+.saved-list li { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); flex-wrap: wrap; }
+.saved-list a { font-weight: 600; flex: 1; min-width: 12em; }
+.prose { padding: 8px 0 72px; }
+.prose h2 { font-size: 28px; margin: 40px 0 12px; }
+.prose h3 { font-size: 19px; margin: 28px 0 6px; }
+.prose p { color: var(--ink-2); margin: 0 0 14px; }
+.sources { margin: 20px 0 0; display: grid; gap: 0; }
+.sources > div { padding: 12px 0; border-top: 1px solid var(--line); }
+.sources dt { font-weight: 600; }
+.sources dd { margin: 2px 0 0; color: var(--ink-2); font-size: 15px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 760px; padding-bottom: 72px; }
+.plan { border: 1px solid var(--line); border-radius: 10px; padding: 24px; background: var(--surface); }
+.plan.on { border-color: var(--ink); }
+.plan h2 { font-size: 22px; }
+.price { font-size: 40px; font-weight: 700; margin: 12px 0 4px; font-stretch: 110%; }
+.plan p { color: var(--ink-2); }
+
+/* footer */
+.foot { border-top: 1px solid var(--line); padding: 28px 0 max(28px, env(safe-area-inset-bottom, 0px)); font-size: 14px; color: var(--ink-3); }
+.foot-in { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.foot p { margin: 0; }
+.foot nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.tag { font: 600 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; border: 1px solid var(--line); border-radius: 99px; padding: 3px 7px; margin-left: 6px; }
+
+/* phone first adjustments */
+@media (max-width: 900px) {
+  .hero { padding: 28px 0 48px; }
+  .hero-in { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+}
+@media (max-width: 620px) {
+  .top-in { flex-wrap: wrap; gap: 4px 14px; padding-block: 10px; }
+  .nav { order: 3; width: 100%; margin: 0; gap: 18px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; font-size: 14.5px; }
+  .lang { margin-left: auto; }
+  .steps, .grid, .plans { grid-template-columns: minmax(0, 1fr); }
+  .how, .featured { padding: 44px 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+</style>
+
+</head>
+<body class="">
+<a class="skip" href="#main">Aller au contenu</a>
+<header class="top"><div class="wrap top-in">
+  <a class="logo" href="/maquette-atlas/fr/"><span class="mark" aria-hidden="true"></span>Maquette Atlas</a>
+  <nav class="nav" aria-label="Main"><a href="/maquette-atlas/fr/models/">Modèles</a><a href="/maquette-atlas/fr/studio/">Studio</a><a href="/maquette-atlas/fr/guides/">Guides</a><a href="/maquette-atlas/fr/about/">À propos</a><a href="/maquette-atlas/fr/pricing/" aria-current="page">Tarifs</a></nav>
+  <a class="lang" href="/maquette-atlas/pricing/" hreflang="en" lang="en" aria-label="Langue: English">EN</a>
+</div></header>
+<main id="main">
+
+<section class="page-head"><div class="wrap"><h1>Tarifs</h1><p class="lead">Maquette Atlas est gratuit pendant l’aperçu. Des offres et des licences pour l’usage commercial viendront plus tard ; ce site ne prend aucun paiement.</p></div></section>
+<section><div class="wrap"><div class="plans"><div class="plan on"><h2>Aperçu</h2><p class="price">0 €</p><p>Tous les lieux, toutes les finitions, tous les exports.</p><a class="btn primary" href="/maquette-atlas/fr/studio/">Ouvrir le Studio</a></div><div class="plan"><h2>Plus tard</h2><p class="price">—</p><p>Comptes, modèles enregistrés et licences pour l’impression commerciale.</p></div></div></div></section>
+</main>
+<footer class="foot"><div class="wrap foot-in">
+  <p>Fait de données ouvertes. Sources et licences dans les Guides. <span class="tag">Aperçu</span></p>
+  <nav aria-label="Legal"><a href="/maquette-atlas/fr/privacy/">Confidentialité</a><a href="/maquette-atlas/fr/terms/">Conditions</a><a href="/maquette-atlas/fr/cookies/">Cookies</a><a href="/maquette-atlas/fr/legal/">Mentions légales</a></nav>
+</div></footer>
+</body>
+</html>
