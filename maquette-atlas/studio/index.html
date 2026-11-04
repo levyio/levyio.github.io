@@ -429,7 +429,7 @@ table.bom td.n { text-align: right; font-family: var(--f-mono); font-variant-num
   </div>
 </div>
 
-<script>window.__STUDIO__ = {"lang":"en","t":{"studio.title":"Studio","studio.place":"Place","studio.frame":"Frame","studio.finish":"Finish","studio.export":"Export","studio.save":"Save","studio.share":"Share link","studio.download":"Download 3MF","studio.saved":"Saved in this browser.","studio.copied":"Link copied.","studio.copyFail":"Copy this link:","studio.home":"Maquette Atlas home","studio.steps":"Studio steps","studio.appLang":"The Studio controls are in English for now."},"home":"/maquette-atlas/","models":"/maquette-atlas/models/"}; window.__EARTH_BASE__ = '/maquette-atlas/studio/earth/';</script>
+<script>window.__STUDIO__ = {"lang":"en","t":{"studio.title":"Studio","studio.place":"Place","studio.frame":"Frame","studio.finish":"Finish","studio.export":"Export","studio.save":"Save","studio.share":"Share link","studio.download":"Download 3MF","studio.waiting":"Waiting for site data…","studio.waitingToast":"Still loading site data. The 3MF downloads when the model is complete.","studio.saved":"Saved in this browser.","studio.copied":"Link copied.","studio.copyFail":"Copy this link:","studio.home":"Maquette Atlas home","studio.steps":"Studio steps","studio.appLang":"The Studio controls are in English for now."},"home":"/maquette-atlas/","models":"/maquette-atlas/models/"}; window.__EARTH_BASE__ = '/maquette-atlas/studio/earth/';</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/polygon-clipping@0.15.7/dist/polygon-clipping.umd.min.js"></script>
@@ -7816,11 +7816,26 @@ function studioInit() {
   const dl = h('button', { type: 'button', class: 'btn primary', id: 'stDownload' }, T['studio.download']);
   save.addEventListener('click', studioSave);
   share.addEventListener('click', studioShare);
-  dl.addEventListener('click', () => EXPORTS.find((e) => e.id === '3mf').run().catch((e) => toast('Export failed: ' + e.message)));
+  dl.addEventListener('click', () => studioDownload(dl));
   acts.append(save, share, dl);
   bar.querySelector('.spacer').after(steps);
   bar.append(acts);
   if (window.__STUDIO__.lang !== 'en') $('#panel').prepend(h('p', { class: 'note applang' }, T['studio.appLang']));
+}
+// Download only the finished model: while site data is still arriving, the view shows a coarse first build.
+const studioBusy = () => !S.result || !$('#busy').hidden || [...S.sources.values()].some((v) => v.st === 'busy');
+async function studioDownload(btn) {
+  if (btn.disabled) return;
+  const T = window.__STUDIO__.t, label = btn.textContent;
+  btn.disabled = true;
+  try {
+    for (let calm = 0; calm < 4; calm = studioBusy() ? 0 : calm + 1) { // calm for ~1 s: a rebuild starts 220 ms after data lands
+      if (!calm && btn.textContent === label) { btn.textContent = T['studio.waiting']; toast(T['studio.waitingToast']); }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    await EXPORTS.find((e) => e.id === '3mf').run();
+  } catch (e) { toast('Export failed: ' + e.message); }
+  finally { btn.textContent = label; btn.disabled = false; }
 }
 function studioStep(k) {
   const secs = STEPS.find((s) => s[0] === k)[1];
